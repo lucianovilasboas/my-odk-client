@@ -1,0 +1,10 @@
+{
+  "name": "offline-engine-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Spike da Fase 1: prova de persistencia de rascunho e resolucao local de recursos. Testes em vermelho por design (PLAN.md F1.3).",
+  "scripts": {
+    "test": "node --test 'test/*.test.js'"
+  }
+}

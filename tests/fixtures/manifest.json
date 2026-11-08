@@ -1,0 +1,10 @@
+{
+  "_comment": "Inventário do corpus de testes (PLAN.md §15, Fase 0; §17.1). Preenchido apenas com formulários reais autorizados/anonimizados ou sintéticos declarados como tais. Lista vazia significa: nenhuma homologação.",
+  "version": 0,
+  "status": "pendente",
+  "gate": "G0",
+  "updatedAt": null,
+  "forms": [],
+  "resources": [],
+  "goldenSubmissions": []
+}
