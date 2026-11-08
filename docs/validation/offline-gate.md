@@ -7,14 +7,21 @@
 
 | # | Critério | Web Forms | Enketo Express | Evidência |
 |---|---|---|---|---|
-| 1 | XML e dependências carregam com rede bloqueada | não testado | não testado | PENDENTE |
-| 2 | XPath, tipos e fluxo sem divergência significativa | não testado | não testado | PENDENTE |
-| 3 | Exportar/restaurar rascunho sem regenerar UUID/defaults | não testado | não testado | PENDENTE |
-| 4 | Repeats, idiomas e nós não relevantes preservados | não testado | não testado | PENDENTE |
-| 5 | XML, metadados e anexos aceitos pelo Central | não testado | não testado | PENDENTE |
-| 6 | Captura de alterações para autosave | não testado | não testado | PENDENTE |
-| 7 | Submissão e recursos interceptáveis | não testado | não testado | PENDENTE |
-| 8 | Criptografia e Entities, quando exigidas | não testado | não testado | PENDENTE |
+| 1 | XML e dependências carregam com rede bloqueada | **aprovado** (Chromium desktop) | não avaliado | `spikes/offline-engine/test/browser/engine-gate.test.js` |
+| 2 | XPath, tipos e fluxo sem divergência significativa | parcial: carrega; falta exercitar `instance()`/`jr:choice-name` com valores | não avaliado | idem |
+| 3 | Exportar/restaurar rascunho sem regenerar UUID/defaults | **aprovado** (`instanceID` e id da entidade estáveis) | não avaliado | idem |
+| 4 | Repeats, idiomas e nós não relevantes preservados | não aplicável: corpus sem repeats e com um idioma | não avaliado | — |
+| 5 | XML, metadados e anexos aceitos pelo Central | não testado (depende de submissão, Fase 4) | não avaliado | — |
+| 6 | Captura de alterações para autosave | parcial: `prepareInstancePayload` funciona | não avaliado | idem |
+| 7 | Submissão e recursos interceptáveis | **aprovado** para recursos (`fetchFormAttachment`) | não avaliado | idem |
+| 8 | Criptografia e Entities, quando exigidas | entidade **aprovada** no payload; criptografia não se aplica | não avaliado | idem |
+
+Achado pendente de verificação: o motor escreve `create="true"` onde o pyxform
+publica `create="1"`. A aceitação pelo Central precisa ser provada com submissão
+real antes de declarar criação de entidade suportada.
+
+Enketo Express **não foi avaliado**: exige infraestrutura própria (Docker/Redis)
+e o ADR 0001 continua aberto.
 
 ## 2. Contrato offline (§2.1) em aparelho real
 

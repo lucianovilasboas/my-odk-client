@@ -3,8 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Spike da Fase 1: prova de persistencia de rascunho e resolucao local de recursos. Testes em vermelho por design (PLAN.md F1.3).",
+  "description": "Spike da Fase 1: persistencia de rascunho, resolucao local de recursos e gate do motor XForms (PLAN.md §5.3, §8).",
   "scripts": {
-    "test": "node --test 'test/*.test.js'"
+    "test": "node --test 'test/*.test.js'",
+    "test:browser": "node scripts/build-harness.js && node --test 'test/browser/*.test.js'"
+  },
+  "devDependencies": {
+    "@getodk/xforms-engine": "^1.1.1",
+    "esbuild": "^0.28.2",
+    "fake-indexeddb": "^6.2.8",
+    "playwright-core": "^1.65.0"
   }
 }
