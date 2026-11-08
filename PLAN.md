@@ -908,8 +908,8 @@ instalado. "SPA" passa a descrever apenas a forma de construir a interface.
 | Instalação | oferecida no Android; instruída no iOS (Compartilhar → Adicionar à Tela de Início) |
 | Standalone | sem barra de endereço, safe areas respeitadas, botão físico "voltar" do Android contido durante o preenchimento |
 | Abertura offline | abrir pelo ícone em modo avião, após a preparação |
-| Configuração | QR do App User do agente — câmera no Android, com "colar conteúdo" como caminho garantido |
-| Uso compartilhado | cada agente tem área própria, particionada por `workspaceId`; trocar de usuário não expõe dados do anterior |
+| Configuração | QR do App User do agente — câmera (`BarcodeDetector`, com `jsQR` de fallback) ou colar o conteúdo. O projeto vem no QR; não há projeto fixo no servidor |
+| Vínculo | um aparelho por agente: não há troca de agente no app. "Reconfigurar aparelho" existe só como recuperação de QR errado, bloqueada enquanto houver fila |
 
 ### 22.2 Service worker
 

@@ -78,3 +78,9 @@ def nova_sessao(token: str, host: str, project_id: str, ttl_seconds: int) -> dic
         'iat': agora,
         'exp': agora + ttl_seconds,
     }
+
+
+def deve_renovar(dados: dict[str, Any], ttl_seconds: int, agora: int | None = None) -> bool:
+    """Renova quando resta metade do prazo, para não reescrever o cookie a cada request."""
+    agora = int(time.time()) if agora is None else agora
+    return int(dados.get('exp', 0)) - agora <= ttl_seconds // 2

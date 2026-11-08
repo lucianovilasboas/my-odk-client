@@ -29,13 +29,26 @@ Traefik alcança os serviços. Nenhum outro serviço é compartilhado.
 
 ## Subir
 
+Na raiz do repositório, numa tag:
+
+```bash
+./deploy.sh
+```
+
+O script faz o pré-requisito, o `.env`, a imagem, o `up` e o health check. Para
+repetir manualmente:
+
 ```bash
 cd deploy
-cp .env.example .env      # preencher SESSION_SECRET; nunca versionar
-openssl rand -base64 32   # gera o valor de SESSION_SECRET
-docker compose up -d
+docker compose build && docker compose up -d
 docker compose logs -f app
 ```
+
+## Projeto e formulário
+
+Não há projeto fixo: o `projectId` vem do QR do App User, como no Collect.
+`ALLOWED_CENTRAL_HOSTS` continua obrigatório (proteção contra SSRF);
+`ALLOWED_PROJECT_IDS` é opcional e só serve para restringir.
 
 ## Verificar
 
