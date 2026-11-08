@@ -1,0 +1,11 @@
+**/node_modules
+**/.venv
+**/dist
+.git
+**/__pycache__
+**/*.pyc
+tests
+spikes
+assets
+forms
+docs

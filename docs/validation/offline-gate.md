@@ -62,6 +62,18 @@ Preencher uma linha por execução. `Resultado` só aceita `aprovado` ou
 | Identidade usada | App User com permissão de envio | — |
 | Registro de teste removido | **pendente** — App User não apaga; remover no Central | — |
 
+## 4.1 Adaptador e PWA (Fase 2a)
+
+Verificado em 2026-11-08 contra o projeto 14, somente leitura:
+
+| Verificação | Resultado |
+|---|---|
+| `POST /api/v1/connections` com o QR do App User | `200`, `workspaceId` derivado, token ausente da resposta |
+| `GET /api/v1/forms` | 2 formulários, sem `key/` nas URLs |
+| `GET /api/v1/forms/form_parte_1/package` | XML de 36.094 bytes + `Agentes.csv` |
+| PWA no navegador | instala, baixa pacote, preenche, autosave visível |
+| Rascunho após recarregar a página | preservado |
+
 ## 5. Conclusão do gate
 
 **PENDENTE.** Só preencher quando o ADR 0001 estiver decidido e as tabelas

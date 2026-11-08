@@ -1,0 +1,26 @@
+{
+  "name": "my-odk-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@getodk/web-forms": "^1.1.1",
+    "@getodk/xforms-engine": "^1.1.1",
+    "vue": "^3.5.29"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.9",
+    "vite-plugin-pwa": "^1.0.3",
+    "vitest": "^3.2.4",
+    "vue-tsc": "^3.1.1"
+  }
+}
