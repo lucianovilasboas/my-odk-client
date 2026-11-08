@@ -4,9 +4,9 @@
 >
 > Prioridade confirmada por Luciano: o aplicativo precisa funcionar offline e enviar os formulários posteriormente ao ODK Central, quando houver uma rede acessível. Esse requisito precede decisões de framework, aparência e distribuição.
 
-**Objetivo:** criar um cliente de coleta multiplataforma, com interface SPA, inspirado no ODK Collect, capaz de preparar formulários online, coletar e persistir dados sem rede e sincronizar com ODK Central posteriormente.
+**Objetivo:** criar um cliente de coleta multiplataforma, entregue como PWA instalável (interface SPA por dentro), inspirado no ODK Collect, capaz de preparar formulários online, coletar e persistir dados sem rede e sincronizar com ODK Central posteriormente.
 
-**Arquitetura proposta:** interface SPA instalável como PWA, motor ODK XForms executado no dispositivo, armazenamento local transacional e fila persistente. Backend REST desacoplado para credenciais e adaptação ao protocolo do Central; não participa do preenchimento offline. A distribuição exclusivamente web depende de aprovação em testes reais de durabilidade; uma variante híbrida com armazenamento nativo é alternativa a aprovar se a PWA não satisfizer o requisito primordial.
+**Arquitetura proposta:** PWA instalável — aplicativo local no aparelho, sem barra de navegador —, motor ODK XForms executado no dispositivo, armazenamento local transacional e fila persistente. Backend REST desacoplado para credenciais e adaptação ao protocolo do Central; não participa do preenchimento offline. A distribuição exclusivamente web depende de aprovação em testes reais de durabilidade; uma variante híbrida com armazenamento nativo é alternativa a aprovar se a PWA não satisfizer o requisito primordial.
 
 **Stack candidata:** Vue 3 + TypeScript + Vite + componentes/motor oficiais ODK Web Forms; IndexedDB/Dexie; Service Worker; FastAPI + PostgreSQL para o adaptador REST. A escolha do motor e a admissibilidade da PWA serão decididas antes da construção do produto.
 
@@ -22,7 +22,7 @@ Decisões do usuário, não abertas à rediscussão neste plano:
 
 1. Entregar somente análise, estruturação e plano nesta etapa.
 2. Usar ODK Collect como referência funcional e técnica, incluindo investigação com REA.
-3. Modelar a interface como SPA, para dispositivos Android, iPhone/iOS e outras plataformas compatíveis.
+3. Modelar a interface como SPA e a entrega como **PWA instalável**, para Android, iPhone/iOS e outras plataformas compatíveis (reafirmado em §22).
 4. Fazer do funcionamento offline o requisito principal, e não uma funcionalidade opcional de uma fase tardia.
 5. Comunicar-se com ODK Central, preservando a interoperabilidade dos formulários e submissões, como o Collect.
 6. Salvar o planejamento nesta pasta para leitura e execução posterior.
@@ -310,6 +310,27 @@ Servir SPA e `/api` na mesma origem por um reverse proxy não acopla os componen
 - Docker para ambiente reproduzível; configurações externas por bind mount/segredos. Nenhum container será criado nesta etapa.
 - HTTPS é requisito nos aparelhos. HTTP em IP da LAN não é equivalente à exceção de desenvolvimento `localhost`.
 - Hospedagem privada via rede autorizada/ZeroTier é o padrão de segurança a avaliar. Acesso público, domínio, certificados e lojas de aplicativo exigem decisão posterior.
+
+### 6.4 Isolamento de implantação
+
+Decisão do usuário: o cliente **não roda na stack do ODK Central**. A aplicação é
+implantada como stack própria, aceita no mesmo host ou em host distinto, sem
+compartilhar runtime com o Central.
+
+| # | Regra |
+|---|---|
+| 1 | Origem própria (subdomínio dedicado). A PWA nunca é servida por um path do Central. |
+| 2 | Containers/processos próprios, sem compartilhar imagem, volume, rede Docker, banco, Redis ou usuário de serviço. |
+| 3 | Comunicação com o Central apenas por HTTPS público; sem acesso a banco, volumes ou socket Docker. |
+| 4 | Proxy reverso próprio. Se no mesmo host, nenhuma alteração no vhost do Central. |
+| 5 | App User com escopo mínimo; nunca conta administrativa. |
+| 6 | Limites de memória, CPU e tamanho de upload por container. |
+| 7 | Logs e retenção próprios, sem dado pessoal. |
+| 8 | Independência operacional: atualizar o cliente não reinicia o Central; cair o cliente não impede coleta offline; cair o Central não impede preencher. |
+
+Topologia escolhida: host dedicado **ovm-1** com **Traefik**, em
+`odk-cliente.lucianovilasboas.com.br`. Valores e limites em
+`docs/requirements.md` §7.1.
 
 ## 7. Modelo de dados e invariantes
 
@@ -855,6 +876,50 @@ Bundle REA temporário: `/home/luciano/.hermes/cache/scratch/odk-client-analysis
 - [x] Pendências e ausência de testes runtime expressamente registradas.
 - [x] Decisões técnicas fechadas (IndexedDB, fila local, pacote completo, persistência/backup, gatilho de envio ao reabrir, mensagens ao usuário) consolidadas em §1.1 e §11.2.
 - [ ] BUILD autorizado — pendente, não iniciar nesta etapa.
+- [x] Entrega definida como PWA instalável e implantação isolada da stack do Central (§22, §6.4).
 - [ ] Homologação em dispositivos/Central — futura; nenhuma alegação de funcionamento já comprovado.
 
 **Conclusão:** a arquitetura será escolhida para cumprir a coleta offline e a entrega posterior íntegra ao Central. A preferência por SPA/PWA não tem precedência sobre a conservação dos dados. Este plano permite iniciar uma prova técnica objetiva, mas não confunde pesquisa estática com aplicativo implementado ou offline já garantido.
+
+---
+
+## 22. Emenda — PWA como forma de entrega
+
+> Registrada em 08/11/2026, após revisão do usuário. Altera a redação e os
+> critérios de aceite, não a arquitetura: motor, armazenamento, fila e adaptador
+> permanecem como definidos.
+
+A entrega é uma **PWA instalável**, que se comporta como aplicativo local: abre
+pelo ícone, sem barra do navegador, e preenche sem rede como qualquer app
+instalado. "SPA" passa a descrever apenas a forma de construir a interface.
+
+### 22.1 Instalabilidade
+
+| Item | Requisito |
+|---|---|
+| Manifesto | `name`, `short_name`, `start_url=/`, `scope=/`, `display=standalone`, `theme_color`, `background_color`, `lang=pt-BR`, `id` estável |
+| Ícones | 192 px, 512 px e um `purpose: maskable` |
+| Instalação | oferecida no Android; instruída no iOS (Compartilhar → Adicionar à Tela de Início) |
+| Standalone | sem barra de endereço, safe areas respeitadas, botão físico "voltar" do Android contido durante o preenchimento |
+| Abertura offline | abrir pelo ícone em modo avião, após a preparação |
+
+### 22.2 Service worker
+
+- precache do shell versionado, incluindo JS/WASM do motor;
+- cache do pacote de formulário separado do cache do shell;
+- fallback de navegação para o shell quando offline;
+- atualização baixada e aplicada em checkpoint, sem `skipWaiting` cego (§8.3);
+- troca de domínio muda a origem e torna o armazenamento anterior inacessível (§8.3).
+
+### 22.3 Plataformas
+
+"Qualquer sistema operacional" não significa qualquer navegador ou versão.
+Homologa-se o que **instala e abre offline pelo ícone**. Primeiro ciclo:
+**Android**. iPhone/iPad fica fora da matriz até haver aparelho disponível, e a
+matriz registra "não homologado" — nunca "suportado".
+
+### 22.4 Consequência para as fases
+
+A Fase 2 ganha passo próprio de PWA (manifesto, ícones, service worker,
+instalação), verificado antes dos testes de coleta. Sem instalar e abrir offline
+pelo ícone, o que se testa é um site, não um aplicativo.

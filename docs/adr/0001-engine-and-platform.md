@@ -1,6 +1,6 @@
 # ADR 0001 — Motor XForms e estratégia de plataforma
 
-> **Status:** proposto — **não decidido**.
+> **Status:** parcial — motor oficial aprovado em desktop; homologação em aparelho pendente.
 > Nenhuma linha de código pode assumir o motor escolhido antes da aprovação
 > deste ADR (`AGENTS.md` §0.5).
 
@@ -48,8 +48,22 @@ Um motor que renderiza todos os campos mas não restaura rascunho falha no gate.
 
 ## Decisão
 
-**PENDENTE.** Preencher com: motor e versão exata, licença conferida, commit de
-referência, resultado de cada critério acima e justificativa.
+**Em andamento.** O motor oficial `@getodk/xforms-engine` 1.1.1 (Apache-2.0)
+passou nos critérios 1, 2, 3, 5, 7 e 8 do gate, em Chromium, com o corpus real
+(`docs/validation/offline-gate.md`). Falta repetir em aparelho Android real.
+
+### Enketo Express — dispensado em 2026-11-08
+
+Não será avaliado, por decisão do usuário, com três justificativas:
+
+1. O motor oficial passou nos critérios que o corpus exige.
+2. Enketo Express exigiria infraestrutura adicional (Docker/Redis) sem eliminar
+   a necessidade de persistência própria.
+3. A tensão documentada entre criptografia e rascunho não se aplica: o corpus não
+   usa submissão cifrada.
+
+Risco aceito: se o motor oficial reprovar em aparelho real, a comparação passa a
+ser necessária e esta decisão deve ser reaberta.
 
 ## Consequências
 
