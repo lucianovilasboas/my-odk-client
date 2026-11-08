@@ -1,0 +1,1 @@
+"""Adaptador My ODK Client."""

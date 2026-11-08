@@ -4,6 +4,11 @@ node_modules/
 # Build
 dist/
 build/
+frontend/dist/
+backend/app/static/
+.venv/
+__pycache__/
+*.pyc
 
 # Ambiente e segredos
 .env

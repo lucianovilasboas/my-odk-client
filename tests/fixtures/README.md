@@ -21,6 +21,14 @@ Os anexos reais **não** entram no repositório:
 testes validem estrutura sem carregar dado pessoal. Não substituir por cópias
 reais.
 
+## Deriva com o tempo
+
+Os hashes acima são um retrato de 2026-11-08. Arquivos anexados no Central podem
+mudar sem nova versão do formulário — `Agentes.csv`, por exemplo, já foi alterado
+depois da captura. Isso é esperado e é justamente o motivo de o pacote de campo
+ser tratado como **geração**: o cliente guarda o que baixou e só troca quando
+baixa de novo.
+
 ## Regenerar as fixtures
 
 Somente leitura, pelo App User do projeto 14:

@@ -10,6 +10,9 @@
 
 services:
   app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
     image: ${IMAGE:-my-odk-client:latest}
     container_name: my-odk-client
     restart: unless-stopped
