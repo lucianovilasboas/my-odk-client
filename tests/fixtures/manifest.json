@@ -1,10 +1,44 @@
 {
-  "_comment": "Inventário do corpus de testes (PLAN.md §15, Fase 0; §17.1). Preenchido apenas com formulários reais autorizados/anonimizados ou sintéticos declarados como tais. Lista vazia significa: nenhuma homologação.",
-  "version": 0,
-  "status": "pendente",
+  "_comment": "Inventario do corpus. Os XML em xforms/ sao copias exatas do publicado no Central (projeto 14) em 2026-11-08. Os CSV em resources/ sao SINTETICOS: os reais contem dados pessoais e nao entram no repositorio.",
+  "version": 1,
+  "status": "inventariado",
   "gate": "G0",
-  "updatedAt": null,
-  "forms": [],
+  "updatedAt": "2026-11-08",
+  "source": {
+    "host": "odk.lucianovilasboas.com.br",
+    "projectId": 14,
+    "projectName": "IFNMG - Almenara - 3",
+    "access": "App User somente leitura (OpenRosa)"
+  },
+  "forms": [
+    {
+      "xmlFormId": "form_parte_1",
+      "name": "Formulário - Parte 1",
+      "version": "1",
+      "hash": "md5:9ad33d7f0aadf506dd8bf3866bfb4352",
+      "fixture": "xforms/form_parte_1.xml",
+      "binds": 63,
+      "createsEntities": ["pessoas_idosas"],
+      "entityProperties": [],
+      "attachments": [
+        { "filename": "Agentes.csv", "hash": "md5:b0531cc0749b52aee6809c06d5b7deb4", "fixture": "resources/Agentes.csv", "synthetic": true }
+      ]
+    },
+    {
+      "xmlFormId": "form_parte_2",
+      "name": "Formulário - Parte 2",
+      "version": "1",
+      "hash": "md5:00d83f7dc16eb8e2c1781aca37b96c9d",
+      "fixture": "xforms/form_parte_2.xml",
+      "binds": 43,
+      "createsEntities": [],
+      "readsDatasets": ["Agentes.csv", "pessoas_idosas.csv"],
+      "attachments": [
+        { "filename": "Agentes.csv", "hash": "md5:b0531cc0749b52aee6809c06d5b7deb4", "fixture": "resources/Agentes.csv", "synthetic": true },
+        { "filename": "pessoas_idosas.csv", "hash": "md5:a1fac117a5fde93df80223836252ed10", "fixture": "resources/pessoas_idosas.csv", "synthetic": true }
+      ]
+    }
+  ],
   "resources": [],
   "goldenSubmissions": []
 }

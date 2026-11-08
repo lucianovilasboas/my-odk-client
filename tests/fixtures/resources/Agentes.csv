@@ -1,0 +1,3 @@
+name,label,__version,Bairro_Reside,Bairros,Codigo,E_mail,Funcao,Municipio,Nome,Realizou_Curso,Telefone,UF
+agente-teste-1,Agente Teste 1,1,Centro,Centro,A-001,agente1@example.test,Agente de campo,Almenara,Agente Teste 1,sim,33999990001,MG
+agente-teste-2,Agente Teste 2,1,Jequitinhonha,Jequitinhonha,A-002,agente2@example.test,Agente de campo,Almenara,Agente Teste 2,nao,33999990002,MG
