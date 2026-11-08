@@ -897,8 +897,8 @@ instalado. "SPA" passa a descrever apenas a forma de construir a interface.
 
 | Item | Requisito |
 |---|---|
-| Manifesto | `name`, `short_name`, `start_url=/`, `scope=/`, `display=standalone`, `theme_color`, `background_color`, `lang=pt-BR`, `id` estável |
-| Ícones | 192 px, 512 px e um `purpose: maskable` |
+| Manifesto | `name=My ODK Client`, `short_name=My ODK`, `start_url=/`, `scope=/`, `display=standalone`, `theme_color`, `background_color`, `lang=pt-BR`, `id=/` |
+| Ícones | 192 px, 512 px e um `purpose: maskable`; fonte em `assets/branding/` |
 | Instalação | oferecida no Android; instruída no iOS (Compartilhar → Adicionar à Tela de Início) |
 | Standalone | sem barra de endereço, safe areas respeitadas, botão físico "voltar" do Android contido durante o preenchimento |
 | Abertura offline | abrir pelo ícone em modo avião, após a preparação |

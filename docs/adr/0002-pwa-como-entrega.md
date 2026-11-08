@@ -33,6 +33,16 @@ o Central é HTTPS público, como o Collect faz.
 A PWA e `/api` vivem na mesma origem, para não introduzir um segundo problema de
 CORS entre o cliente e o adaptador.
 
+## Identidade
+
+- `name`: **My ODK Client**; `short_name`: **My ODK** (cabe no rótulo do Android
+  sem truncar).
+- Ícone provisório gerado no projeto, em `assets/branding/`; será substituído por
+  identidade definitiva.
+- "ODK" é marca da Get ODK Inc. O nome foi escolhido pelo usuário; não deve ser
+  apresentado como produto oficial e precisa de revisão antes de distribuição
+  pública (`PLAN.md` §12).
+
 ## Alternativas consideradas
 
 | Alternativa | Motivo da recusa |

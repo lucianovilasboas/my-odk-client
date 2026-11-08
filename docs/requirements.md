@@ -100,6 +100,9 @@ muda a Fase 3 — não pode ser adiado para depois do piloto.
 | Topologia | Host dedicado **ovm-1**, stack própria (não roda na stack do Central) |
 | Proxy reverso | **Traefik** no host, com certificado próprio |
 | Domínio | `odk-cliente.lucianovilasboas.com.br` |
+| Nome do app | `My ODK Client` |
+| Nome curto | `My ODK` |
+| Ícone | provisório em `assets/branding/`, a substituir |
 | Certificado TLS | Let's Encrypt via Traefik, renovação automática |
 | Acesso privado ou público? | Público com HTTPS; sem restrição por VPN no primeiro ciclo |
 | Aplicação de loja (Play/App Store) necessária? | Não — instalação pela tela inicial |
