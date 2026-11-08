@@ -116,6 +116,9 @@ Documento operacional para agentes de código. Complementa o AGENTS.md global
 ## 7. Segurança, privacidade e licenças
 
 - QR e credenciais são segredos: nunca em log, screenshot, analytics, erro ou chat.
+- Token de App User é **por agente** e nunca fica em JavaScript, IndexedDB ou
+  `localStorage`: vive apenas dentro do cookie de sessão cifrado (ADR 0003).
+  O cliente guarda somente o `workspaceId` opaco.
 - Sanitizar labels/HTML; CSP compatível; nenhum script de CDN.
 - HTTPS obrigatório; nunca desabilitar validação de certificado.
 - Dados pessoais: minimização, retenção, responsáveis e recuperação definidos

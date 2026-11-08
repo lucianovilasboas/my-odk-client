@@ -31,7 +31,8 @@ Traefik alcança os serviços. Nenhum outro serviço é compartilhado.
 
 ```bash
 cd deploy
-cp .env.example .env      # preencher o token; nunca versionar
+cp .env.example .env      # preencher SESSION_SECRET; nunca versionar
+openssl rand -base64 32   # gera o valor de SESSION_SECRET
 docker compose up -d
 docker compose logs -f app
 ```
@@ -50,5 +51,5 @@ formulários aparece (`PLAN.md` §22.1).
 
 - colocar este serviço no compose do Central;
 - reaproveitar o banco, o Redis ou os volumes do Central;
-- usar conta administrativa do Central no `CENTRAL_APP_USER_TOKEN`;
+- criar token de App User no servidor — cada agente configura o seu pelo QR;
 - commitar `deploy/.env`.
