@@ -33,6 +33,23 @@ O comando acima **verifica**; para baixar de novo é preciso repetir a coleta em
 `/v1/key/<token>/projects/14/forms/{id}.xml` e atualizar `manifest.json` no mesmo
 commit — o teste falha se XML e manifesto divergirem.
 
+## Entidade `pessoas_idosas`
+
+O formulário cria entidades **apenas com rótulo**, sem propriedades. Isso é
+decidido, não um defeito:
+
+- Na especificação, ID e rótulo já formam uma entidade completa; propriedades são
+  opcionais.
+- Propriedades só podem ser criadas pela coluna `save_to` da aba `survey`. A aba
+  `entities_properties` do XLSX não faz parte do XLSForm e é ignorada na conversão.
+- O rótulo (`nome | bairro - município/UF | instanceID`) é o que a Parte 2 exibe e
+  basta para selecionar a pessoa.
+- Efeito colateral desejado: nenhum CPF, telefone ou endereço é baixado para todos
+  os aparelhos junto com a lista de entidades.
+
+Se as propriedades forem adicionadas no futuro: nova versão do formulário,
+**sem retroação** nas entidades existentes, e mudança estrutural no CSV.
+
 ## O que estes testes provam
 
 Provam que as fixtures descrevem fielmente o publicado e que invariantes do

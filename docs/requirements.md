@@ -38,7 +38,7 @@ Silêncio não é classificação.
 | Anexos de enunciado (imagem, áudio, vídeo) | não | não | fora do MVP | nenhuma coluna `media::` nos XLSX |
 | CSVs / listas externas | sim | sim | provar no gate | `Agentes.csv` nas duas partes |
 | Entities — leitura (snapshot) | sim | sim | provar no gate | `pessoas_idosas.csv` na P2, 95 registros hoje |
-| Entities — criação/atualização offline | criação sim | sim | provar no gate | P1 cria `pessoas_idosas`; hoje **sem propriedades** no XML publicado |
+| Entities — criação/atualização offline | criação sim | sim | provar no gate | P1 cria `pessoas_idosas`. **Somente rótulo, por decisão**: propriedades são opcionais na especificação e a aba `entities_properties` não é suportada pelo XLSForm |
 | Criptografia de submissão | não | não | fora do MVP | ausência de chave pública |
 | Auditoria (`audit.csv`) | não | não | fora do MVP | ausência de metadado `audit` |
 | Foto / arquivo | não | não | fora do MVP | — |
@@ -109,19 +109,23 @@ Cortar tipos de recurso é aceitável; aceitar coleta sem durabilidade não é (
 
 | Item | Decisão | Justificativa |
 |---|---|---|
-| Recursos incluídos | PENDENTE | |
-| Recursos bloqueados no piloto | PENDENTE | |
-| Recursos que exigem prova na Fase 1 | PENDENTE | |
+| Formulários do piloto | `form_parte_1` e `form_parte_2`, versão 1 | Corpus completo do projeto 14 |
+| Recursos incluídos | tipos básicos, grupos, XPath, CSV externo, `geopoint`, criação de entidade | presentes no corpus |
+| Recursos bloqueados no piloto | nenhum | o corpus não usa recurso fora do MVP |
+| Fora do MVP (ausentes no corpus) | repeats, mídia em enunciado, áudio/vídeo, assinatura, barcode, auditoria, criptografia, mapas, Entities offline de consumo | não existem nos dois formulários |
+| Propriedades de entidade | **nenhuma** — só rótulo (decisão A) | rótulo é suficiente para a Parte 2 selecionar; evita baixar CPF/telefone em todos os aparelhos |
+| Fluxo entre formulários | sincronizar entre Parte 1 e Parte 2 (decisão B1) | dispensa overlay local de entidades; a Parte 2 recebe o CSV atualizado do Central |
+| Recursos que exigem prova na Fase 1 | rascunho durável, `select_one_from_file` + `instance()`, criação de entidade sem UUID regenerado, nova geração de dataset | itens do gate ENGINE que o corpus realmente exercita |
 
 ## 9. Checklist do gate G0
 
-- [ ] Corpus real autorizado e anonimizado disponível
-- [ ] Todo recurso do corpus classificado (sem `PENDENTE`)
-- [ ] Central de teste e identidades confirmados
+- [x] Corpus real autorizado e anonimizado disponível (XML publicados em `tests/fixtures/xforms/`)
+- [x] Todo recurso do corpus classificado (sem `PENDENTE`)
+- [x] Central de teste e identidades confirmados (App User somente leitura)
 - [ ] Matriz de aparelhos e limites operacionais definidos
 - [ ] Política de dados e proteção local aprovada
 - [ ] Recorte do MVP aprovado explicitamente pelo responsável
-- [ ] `tests/fixtures/manifest.json` preenchido
+- [x] `tests/fixtures/manifest.json` preenchido
 
 Sem todos os itens acima, a Fase 1 continua restrita a formulários sintéticos e
 **não** pode alegar homologação institucional (§15, Gate G0).
