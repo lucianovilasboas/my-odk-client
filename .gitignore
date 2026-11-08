@@ -1,0 +1,24 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+build/
+
+# Ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# Artefatos de teste
+coverage/
+playwright-report/
+test-results/
+
+# Logs e temporários
+*.log
+*.tmp
+.DS_Store
+
+# Spike: dados locais de execução
+spikes/**/tmp/
