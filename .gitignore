@@ -9,6 +9,9 @@ build/
 .env
 .env.*
 !.env.example
+# QR de configuração do Collect: contém a chave do App User na server_url
+*.app_user
+forms/.app_user
 
 # Artefatos de teste
 coverage/

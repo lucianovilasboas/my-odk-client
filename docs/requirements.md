@@ -16,7 +16,12 @@ Incluir o formulário mais complexo e o maior do portfólio, não apenas os simp
 
 | # | Formulário | `xmlFormId` | Versão | Por que é essencial | Fonte | Autorizado por |
 |---|---|---|---|---|---|---|
-| 1 | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE | PENDENTE |
+| 1 | Formulário - Parte 1 (cadastro + socioeconômico) | `form_parte_1` | 1 | Cria a entidade `pessoas_idosas` usada pela Parte 2 | Central, projeto 14 | Pendente de registro formal |
+| 2 | Formulário - Parte 2 (direitos da pessoa idosa) | `form_parte_2` | 1 | Consome `pessoas_idosas.csv` e `Agentes.csv` | Central, projeto 14 | Pendente de registro formal |
+
+Inventário completo em `tests/fixtures/manifest.json`. XML publicados em
+`tests/fixtures/xforms/` (cópia exata, sem token). Os CSV reais contêm dados
+pessoais e **não** entram no repositório; as fixtures usam versões sintéticas.
 
 ## 3. Inventário de recursos por formulário
 
@@ -26,33 +31,34 @@ Silêncio não é classificação.
 
 | Recurso | Presente no corpus? | Essencial? | Tratamento | Observação |
 |---|---|---|---|---|
-| Tipos básicos (texto, número, data, hora, nota, seleção) | PENDENTE | PENDENTE | PENDENTE | |
-| Expressões XPath (relevância, cálculo, constraint) | PENDENTE | PENDENTE | PENDENTE | |
-| Grupos e repeats (incluindo aninhados) | PENDENTE | PENDENTE | PENDENTE | |
-| Idiomas / traduções | PENDENTE | PENDENTE | PENDENTE | |
-| Anexos de enunciado (imagem, áudio, vídeo) | PENDENTE | PENDENTE | PENDENTE | |
-| CSVs / listas externas | PENDENTE | PENDENTE | PENDENTE | |
-| Entities — leitura (snapshot) | PENDENTE | PENDENTE | PENDENTE | |
-| Entities — criação/atualização offline | PENDENTE | PENDENTE | PENDENTE | §13 exige trilha própria |
-| Criptografia de submissão | PENDENTE | PENDENTE | PENDENTE | Tensão com rascunho: §5.1 item 4 |
-| Auditoria (`audit.csv`) | PENDENTE | PENDENTE | PENDENTE | |
-| Foto / arquivo | PENDENTE | PENDENTE | PENDENTE | |
-| Áudio / vídeo de resposta | PENDENTE | PENDENTE | PENDENTE | |
-| Geopoint / geotrace / geoshape | PENDENTE | PENDENTE | PENDENTE | |
-| Mapas offline | PENDENTE | PENDENTE | PENDENTE | |
-| Barcode / QR de pergunta | PENDENTE | PENDENTE | PENDENTE | Separado do QR de configuração |
-| Assinatura / desenho | PENDENTE | PENDENTE | PENDENTE | |
-| Consulta HTTP externa no formulário | PENDENTE | PENDENTE | PENDENTE | Não funciona offline |
-| Intents / apps externos / hardware | PENDENTE | PENDENTE | PENDENTE | Fora da promessa PWA |
+| Tipos básicos (texto, número, data, hora, nota, seleção) | sim | sim | suportado | 31 `select_one` + 3 `select_multiple` + 12 `text` + 5 `integer` na P1 |
+| Expressões XPath (relevância, cálculo, constraint) | sim | sim | provar no gate | `instance()`, `jr:choice-name()`, `normalize-space()`, `concat()`, `if()`, `selected()` |
+| Grupos e repeats (incluindo aninhados) | grupos sim, repeats não | sim | suportado | 7 grupos na P1 (aninhados), 2 na P2; zero repeats |
+| Idiomas / traduções | não | não | fora do MVP | formulários em idioma único |
+| Anexos de enunciado (imagem, áudio, vídeo) | não | não | fora do MVP | nenhuma coluna `media::` nos XLSX |
+| CSVs / listas externas | sim | sim | provar no gate | `Agentes.csv` nas duas partes |
+| Entities — leitura (snapshot) | sim | sim | provar no gate | `pessoas_idosas.csv` na P2, 95 registros hoje |
+| Entities — criação/atualização offline | criação sim | sim | provar no gate | P1 cria `pessoas_idosas`; hoje **sem propriedades** no XML publicado |
+| Criptografia de submissão | não | não | fora do MVP | ausência de chave pública |
+| Auditoria (`audit.csv`) | não | não | fora do MVP | ausência de metadado `audit` |
+| Foto / arquivo | não | não | fora do MVP | — |
+| Áudio / vídeo de resposta | não | não | fora do MVP | — |
+| Geopoint | sim | sim | suportado | `type=gps` compila para `geopoint` (confirmado no XML) |
+| Geotrace / geoshape | não | não | fora do MVP | — |
+| Mapas offline | não | não | fora do MVP | — |
+| Barcode / QR de pergunta | não | não | fora do MVP | QR existe apenas como configuração de projeto |
+| Assinatura / desenho | não | não | fora do MVP | — |
+| Consulta HTTP externa no formulário | não | não | fora do MVP | — |
+| Intents / apps externos / hardware | não | não | fora do MVP | — |
 
 ## 4. Central de teste e identidades
 
 | Item | Resposta |
 |---|---|
-| URL do Central de teste | PENDENTE |
-| Versão do Central | PENDENTE |
-| `projectId` autorizado | PENDENTE |
-| App User (nome e escopo) | PENDENTE |
+| URL do Central de teste | `https://odk.lucianovilasboas.com.br` |
+| Versão do Central | não exposta a App User (403 em `/v1/projects/14`) |
+| `projectId` autorizado | 14 — "IFNMG - Almenara - 3" |
+| App User (nome e escopo) | existente, somente leitura via OpenRosa; sem acesso a endpoints de projeto |
 | Conta de verificação separada | PENDENTE |
 | Quem autoriza o envio de dados sintéticos | PENDENTE |
 
