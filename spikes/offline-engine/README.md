@@ -47,14 +47,27 @@ Com os XML reais de `form_parte_1` e `form_parte_2` e os CSV sintéticos:
 | 7. Recursos interceptáveis | ✅ via `fetchFormAttachment` |
 | Entidade criada no payload | ✅ `<entity dataset="pessoas_idosas" create="true" id="<uuid>">` |
 | 4. Repeats/idiomas | não aplicável (corpus não tem) |
-| 5. Aceitação pelo Central | ⏳ depende de submissão real (Fase 4) |
+| 5. Aceitação pelo Central | ✅ `201` e entidade criada no projeto 14 |
 | 6. Captura de alterações para autosave | ⏳ `prepareInstancePayload` funciona; falta fio de autosave |
 
 ## Achado de interoperabilidade
 
 O motor serializa o atributo como `create="true"`; o pyxform publica
-`create="1"`. São o mesmo booleano XPath, mas **a aceitação pelo Central precisa
-ser verificada** numa submissão real antes de declarar a entidade suportada.
+`create="1"`. **Resolvido**: o Central aceitou a submissão com `201` e criou a
+entidade, então as duas grafias são equivalentes na prática.
+
+## Smoke test contra o Central (escreve de verdade)
+
+```bash
+CENTRAL_TOKEN_FILE=../../forms/.app_user node scripts/central-smoke.mjs --confirm
+```
+
+Monta uma submissão sintética da `form_parte_1`, envia e confere se o
+`pessoas_idosas.csv` ganhou o registro. O registro é marcado com
+`TESTE CLIENTE WEB - APAGAR` e **precisa ser removido no Central** — App User
+não tem permissão de exclusão.
+
+Resultado de 2026-11-08: `201`, lista de entidades de 95 → 96.
 
 ## Limite encontrado
 
@@ -66,5 +79,4 @@ Isso não é limitação do produto, mas define como a suíte precisa ser montad
 ## O que falta para fechar o G1
 
 1. Repetir o gate em aparelho Android e iPhone reais.
-2. Submissão de teste aceita pelo Central, incluindo a entidade.
-3. Comparar com Enketo Express (exige infraestrutura; não avaliado aqui).
+2. Comparar com Enketo Express (exige infraestrutura; não avaliado aqui).
