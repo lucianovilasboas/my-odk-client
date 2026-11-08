@@ -2,15 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 
+import 'fake-indexeddb/auto';
+
 import { createDraftStore } from '../src/draft-store.js';
 
 /**
  * Testes de contrato do rascunho durável (PLAN.md §5.3 itens 3 e 6, §8.2).
  *
- * Estado esperado hoje: VERMELHO. Este arquivo é a tarefa F1.3 — o teste que
- * falha antes de existir persistência. Ele deve ficar verde quando a
- * implementação da Fase 1 for escrita, e não ser enfraquecido para acomodar a
- * implementação.
+ * Rodam sobre IndexedDB via `fake-indexeddb`: provam a lógica transacional e as
+ * invariantes. A durabilidade em aparelho real (encerrar, reiniciar, cota) é
+ * medida no gate offline, não aqui.
  */
 
 function draft() {

@@ -1,44 +1,64 @@
 /**
- * Resolução de recursos do pacote de campo — contrato mínimo do spike (Fase 1).
+ * Resolução de recursos do pacote de campo — Fase 1 (PLAN.md §5.3 itens 5 e 7,
+ * §8.1 item 7).
  *
- * Exigência do PLAN.md:
- * - §5.3 item 5 / §8.1 item 7: o preenchimento não busca recurso na rede. Todo
- *   recurso referenciado precisa estar no pacote local.
- * - §5.3 item 7: a resolução fica sob nosso controle, não do motor.
- * - §12: caminho lógico não confiável — `..` e caminho absoluto são recusados.
+ * Regra central: durante a coleta não existe rede. Todo recurso referenciado por
+ * um formulário tem de estar no pacote local; se não estiver, a coleta daquele
+ * formulário é bloqueada em vez de buscar silenciosamente fora.
+ */
+
+/** @typedef {{ path: string, mime: string, bytes: Uint8Array, digest: string }} PackageResource */
+
+/**
+ * Caminho lógico aceitável: relativo, sem `..`, sem raiz absoluta, sem esquema
+ * de URL e sem separador do Windows.
  *
- * NÃO IMPLEMENTADO. Existe apenas para tornar verdes os testes de
- * `test/offline-resources.test.js`.
+ * @param {string} path
  */
+function assertValidPath(path) {
+  const invalido =
+    typeof path !== 'string' ||
+    path.trim() === '' ||
+    path.startsWith('/') ||
+    path.startsWith('\\') ||
+    /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path) ||
+    path.includes('\\') ||
+    path.split('/').includes('..');
+  if (invalido) {
+    const error = new Error(`Caminho de recurso inválido: ${String(path)}`);
+    error.code = 'RESOURCE_PATH_INVALID';
+    throw error;
+  }
+}
 
 /**
- * @typedef {Object} PackageResource
- * @property {string} path   Caminho lógico dentro do pacote (ex.: `media/logo.png`).
- * @property {string} mime
- * @property {Uint8Array} bytes
- * @property {string} digest SHA-256 do conteúdo, conferido no download.
+ * @param {{ resources?: PackageResource[] }} [options]
+ * @returns {Promise<{ resolve: (path: string) => Promise<PackageResource> }>}
  */
+export async function createResourceResolver({ resources = [] } = {}) {
+  /** @type {Map<string, PackageResource>} */
+  const index = new Map();
 
-/**
- * @typedef {Object} ResourceResolver
- * @property {(path: string) => Promise<PackageResource>} resolve
- *   Resolve apenas a partir do pacote local. Rejeita com
- *   `error.code === 'RESOURCE_MISSING'` quando o recurso não está no pacote e
- *   com `error.code === 'RESOURCE_PATH_INVALID'` quando o caminho é inválido.
- */
+  for (const resource of resources) {
+    assertValidPath(resource.path);
+    if (index.has(resource.path)) {
+      const error = new Error(`Recurso duplicado no pacote: ${resource.path}`);
+      error.code = 'RESOURCE_DUPLICATED';
+      throw error;
+    }
+    index.set(resource.path, resource);
+  }
 
-/**
- * @param {object} options
- * @param {PackageResource[]} options.resources Conteúdo do pacote local.
- * @param {(input: string) => Promise<unknown>} [options.fetchImpl]
- *   Injetável apenas para provar que não é chamado durante a coleta.
- * @returns {Promise<ResourceResolver>}
- */
-export async function createResourceResolver() {
-  const error = new Error(
-    'Não implementado (F1.4): resolver recursos do pacote sem acesso à rede. ' +
-      'Ver PLAN.md §15, Fase 1.'
-  );
-  error.code = 'NOT_IMPLEMENTED';
-  throw error;
+  return {
+    async resolve(path) {
+      assertValidPath(path);
+      const resource = index.get(path);
+      if (!resource) {
+        const error = new Error(`Recurso ausente no pacote: ${path}`);
+        error.code = 'RESOURCE_MISSING';
+        throw error;
+      }
+      return resource;
+    },
+  };
 }

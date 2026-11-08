@@ -1,44 +1,71 @@
 # Spike — motor offline (Fase 1)
 
-> **Estado: testes em vermelho por design.** 7 testes, 0 verdes.
-> Isso não é build quebrado: é a tarefa F1.3 do `PLAN.md` — o teste que falha
-> antes de existir persistência. O gate **G1 não está aprovado** e nenhum
-> resultado aqui homologa nada.
-
-## O que este spike precisa provar
-
-| Tarefa (§15) | O que é provado | Onde |
-|---|---|---|
-| F1.2 | Fixture mínima com lógica, repeat, mídia e CSV | pendente |
-| F1.3 | Teste de restauração de rascunho offline | `test/draft-restore.test.js` |
-| F1.4 | Serialize/restore e resolução 100% local de recursos | `test/offline-resources.test.js` |
-| F1.5 | Pacote + rascunho + anexo persistidos e recuperados | `test/draft-restore.test.js` |
+> **Estado:** núcleo implementado e gate ENGINE executado no motor oficial
+> (`@getodk/xforms-engine` 1.1.1) dentro do Chromium. O gate **G1 não está
+> aprovado**: falta teste em aparelho real, submissão aceita pelo Central e a
+> comparação com Enketo Express.
 
 ## Rodar
 
 ```bash
 cd spikes/offline-engine
-npm test          # ou: node --test 'test/*.test.js'
+npm test            # 8 testes: rascunho (IndexedDB) e recursos locais
+npm run test:browser  # gate ENGINE no Chromium, com o corpus publicado
 ```
 
-Saída esperada hoje: todos os testes falhando com `code: 'NOT_IMPLEMENTED'`.
-Um teste que passe sem a implementação correspondente é um teste frouxo.
+`npm run test:browser` precisa de um Chromium instalado. Por padrão usa
+`/usr/bin/google-chrome`; sobrescreva com `CHROME_PATH`.
 
-## Decisão ainda aberta
+## Resultados
 
-O motor XForms **não está escolhido** (Web Forms × Enketo Express). Nada em
-`src/` pode assumir um deles. A decisão e as evidências vão em
-`docs/adr/0001-engine-and-platform.md`.
+### Núcleo (`npm test`)
 
-## Fora de escopo deste spike
+| Prova | Teste | Estado |
+|---|---|---|
+| Rascunho sobrevive a fechar e reabrir | F1.3 | ✅ |
+| Restore não regenera `instanceID` | F1.3 | ✅ |
+| Anexo sem bytes persistidos não vira "salvo" | §7.2.1 | ✅ |
+| Falta de espaço não reporta sucesso | T07 | ✅ |
+| Recurso do pacote resolve sem rede | F1.4 | ✅ |
+| Recurso ausente falha em vez de buscar fora | §8.1.4 | ✅ |
+| Caminho com travessia recusado | §12 | ✅ |
+| Recurso duplicado no pacote recusado | §8.1.4 | ✅ |
 
-- Interface de produto, catálogo de formulários, telas de fila.
-- Backend, autenticação, envio ao Central (Fase 4).
-- Entities offline, criptografia, auditoria (Fase 5, se essenciais em G0).
+Rodam sobre `fake-indexeddb`: provam a lógica transacional, **não** a
+durabilidade em aparelho real.
 
-## Contratos declarados
+### Gate ENGINE (`npm run test:browser`)
 
-`src/draft-store.js` e `src/resource-resolver.js` não são implementações: são a
-forma do contrato que os testes exigem, com o código de erro esperado em cada
-falha. Implementar é torná-los reais; alterar o teste para caber na
-implementação é proibido (§8 do `AGENTS.md`).
+Com os XML reais de `form_parte_1` e `form_parte_2` e os CSV sintéticos:
+
+| Critério (§5.3) | Resultado |
+|---|---|
+| 1. XML + dependências locais com rede bloqueada | ✅ carrega; `fetch` chamado **0** vezes |
+| Falha fechada sem o CSV | ✅ `status: failure` em vez de buscar fora |
+| 3. Restore sem regenerar UUID | ✅ id da entidade e `instanceID` idênticos após restaurar |
+| 7. Recursos interceptáveis | ✅ via `fetchFormAttachment` |
+| Entidade criada no payload | ✅ `<entity dataset="pessoas_idosas" create="true" id="<uuid>">` |
+| 2. XPath completo (`instance()`, `jr:choice-name`) | ⏳ formulário carrega; falta exercitar com valores preenchidos |
+| 4. Repeats/idiomas | não aplicável (corpus não tem) |
+| 5. Aceitação pelo Central | ⏳ depende de submissão real (Fase 4) |
+| 6. Captura de alterações para autosave | ⏳ `prepareInstancePayload` funciona; falta fio de autosave |
+
+## Achado de interoperabilidade
+
+O motor serializa o atributo como `create="true"`; o pyxform publica
+`create="1"`. São o mesmo booleano XPath, mas **a aceitação pelo Central precisa
+ser verificada** numa submissão real antes de declarar a entidade suportada.
+
+## Limite encontrado
+
+O motor oficial **não roda em Node**: o bundle traz um módulo Emscripten com
+`require` embutido e depende de `DOMParser`/`crypto.randomUUID` em contexto
+seguro. Por isso o gate é um teste de navegador, servido por HTTP em `localhost`.
+Isso não é limitação do produto, mas define como a suíte precisa ser montada.
+
+## O que falta para fechar o G1
+
+1. Repetir o gate em aparelho Android e iPhone reais.
+2. Submissão de teste aceita pelo Central, incluindo a entidade.
+3. Comparar com Enketo Express (exige infraestrutura; não avaliado aqui).
+4. Exercitar `instance()` e `jr:choice-name` com valores preenchidos.

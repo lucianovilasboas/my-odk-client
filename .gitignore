@@ -25,3 +25,6 @@ test-results/
 
 # Spike: dados locais de execução
 spikes/**/tmp/
+
+# Harness: bundle gerado, nao versionado
+spikes/**/harness/engine.bundle.js
