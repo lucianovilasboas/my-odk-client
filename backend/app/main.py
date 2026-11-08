@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .central import CentralClient, CentralError, QrInvalido, parse_qr
-from .security import SessionInvalid, derive_workspace_id, nova_sessao, seal, unseal
+from .security import SessionInvalid, derive_workspace_id, deve_renovar, nova_sessao, seal, unseal
 from .settings import Settings, load_settings
 
 logger = logging.getLogger('my_odk_client')
@@ -83,6 +83,34 @@ def cliente_central(request: Request, dados: dict | None = None) -> CentralClien
         settings(),
     )
     return CentralClient(conexao, settings(), getattr(app.state, 'central_transport', None))
+
+
+@app.middleware('http')
+async def renovar_sessao(request: Request, call_next):
+    """Renovação deslizante: sessão válida não expira enquanto o app é usado."""
+    resposta = await call_next(request)
+    blob = request.cookies.get(COOKIE)
+    if not blob or request.url.path.startswith('/api/v1/connections'):
+        return resposta
+
+    configuracao = settings()
+    try:
+        dados = unseal(configuracao.session_secret, blob)
+    except SessionInvalid:
+        return resposta
+
+    if deve_renovar(dados, configuracao.session_ttl_seconds):
+        renovado = nova_sessao(dados['token'], dados['host'], dados['project_id'], configuracao.session_ttl_seconds)
+        resposta.set_cookie(
+            COOKIE,
+            seal(configuracao.session_secret, renovado),
+            max_age=configuracao.session_ttl_seconds,
+            httponly=True,
+            secure=configuracao.cookie_secure,
+            samesite='strict',
+            path='/',
+        )
+    return resposta
 
 
 @app.exception_handler(SessionInvalid)

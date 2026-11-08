@@ -11,6 +11,7 @@ import {
   type Rascunho,
 } from './storage'
 import FillView from './views/FillView.vue'
+import SetupView from './views/SetupView.vue'
 
 type Tela = 'carregando' | 'setup' | 'lista' | 'preenchendo'
 
@@ -18,7 +19,6 @@ const tela = ref<Tela>('carregando')
 const erro = ref<string | null>(null)
 const aviso = ref<string | null>(null)
 
-const qr = ref('')
 const conectando = ref(false)
 const workspace = ref<string | null>(null)
 const base = ref<Base | null>(null)
@@ -26,6 +26,7 @@ const formularios = ref<Formulario[]>([])
 const fila = ref<ItemFila[]>([])
 const rascunhos = ref<Rascunho[]>([])
 const enviando = ref(false)
+const mostrarSobre = ref(false)
 
 const preenchendo = ref<{ xmlFormId: string; localId?: string } | null>(null)
 
@@ -48,33 +49,32 @@ onMounted(async () => {
   await pedirPersistencia().catch(() => false)
 
   const id = workspaceAtivo()
-  if (id) {
-    try {
-      const sessao = await api.sessao()
-      await carregarBase(sessao.workspaceId)
-      await carregarFormularios()
-      tela.value = 'lista'
-      return
-    } catch {
-      // sessão expirada: segue offline com o workspace anterior
-      await carregarBase(id)
-      tela.value = 'lista'
-      return
-    }
+  if (!id) {
+    tela.value = 'setup'
+    return
   }
 
-  tela.value = 'setup'
+  await carregarBase(id)
+
+  try {
+    await api.sessao()
+    await carregarFormularios()
+  } catch {
+    formularios.value = await base.value!.listarFormularios()
+    aviso.value = 'Sem conexão com o servidor. Os formulários já baixados continuam disponíveis.'
+  }
+
+  tela.value = 'lista'
 })
 
-async function conectar() {
+async function conectar(qr: string) {
   erro.value = null
   conectando.value = true
   try {
-    const sessao = await api.conectar(qr.value.trim())
+    const sessao = await api.conectar(qr)
     await carregarBase(sessao.workspaceId)
     await carregarFormularios()
     tela.value = 'lista'
-    qr.value = ''
   } catch (e) {
     erro.value = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)
   } finally {
@@ -116,7 +116,7 @@ async function baixar(formulario: Formulario) {
   }
 }
 
-async function iniciar(xmlFormId: string, localId?: string) {
+function iniciar(xmlFormId: string, localId?: string) {
   preenchendo.value = { xmlFormId, localId }
   tela.value = 'preenchendo'
 }
@@ -135,13 +135,17 @@ async function enviarPendentes() {
     if (item.estado === 'confirmado') continue
     try {
       await api.enviar(item.xml)
-      await base.value.atualizarItem({ ...item, estado: 'confirmado', ultimoErro: undefined, atualizadoEm: Date.now() })
-    } catch (e) {
-      const apiErro = e instanceof ApiError ? e : null
-      const estado = apiErro?.status === 401 ? 'erro' : 'pendente'
       await base.value.atualizarItem({
         ...item,
-        estado,
+        estado: 'confirmado',
+        ultimoErro: undefined,
+        atualizadoEm: Date.now(),
+      })
+    } catch (e) {
+      const apiErro = e instanceof ApiError ? e : null
+      await base.value.atualizarItem({
+        ...item,
+        estado: apiErro?.status === 401 ? 'erro' : 'pendente',
         tentativas: item.tentativas + 1,
         ultimoErro: apiErro ? `${apiErro.code}: ${apiErro.message}` : String(e),
         atualizadoEm: Date.now(),
@@ -152,14 +156,30 @@ async function enviarPendentes() {
   enviando.value = false
 }
 
-async function sair() {
-  await api.sair().catch(() => undefined)
+async function reconfigurar() {
+  if (!base.value || !workspace.value) return
+
+  const atuais = await base.value.listarFila()
+  const abertos = atuais.filter((i) => i.estado !== 'confirmado')
+  if (abertos.length) {
+    erro.value = `Há ${abertos.length} envio(s) pendente(s). Envie antes de reconfigurar este aparelho.`
+    return
+  }
+
+  const confirmado = window.confirm(
+    'Reconfigurar apaga pacotes e rascunhos deste aparelho. Os envios já confirmados não são afetados. Continuar?',
+  )
+  if (!confirmado) return
+
+  indexedDB.deleteDatabase(`odk-${workspace.value}`)
   definirWorkspace(null)
   workspace.value = null
   base.value = null
   formularios.value = []
   fila.value = []
   rascunhos.value = []
+  mostrarSobre.value = false
+  erro.value = null
   tela.value = 'setup'
 }
 </script>
@@ -176,17 +196,12 @@ async function sair() {
 
     <section v-if="tela === 'carregando'">Carregando…</section>
 
-    <section v-else-if="tela === 'setup'">
-      <h2>Configurar este aparelho</h2>
-      <p>
-        Cada agente usa o próprio App User. Escaneie o QR do Central ou cole o
-        conteúdo dele abaixo.
-      </p>
-      <textarea v-model="qr" rows="6" placeholder="cole aqui o conteúdo do QR" aria-label="conteúdo do QR" />
-      <button :disabled="!qr.trim() || conectando" @click="conectar">
-        {{ conectando ? 'Conectando…' : 'Conectar' }}
-      </button>
-    </section>
+    <SetupView
+      v-else-if="tela === 'setup'"
+      :conectando="conectando"
+      :erro="erro"
+      @conectar="conectar"
+    />
 
     <section v-else-if="tela === 'lista'">
       <h2>Formulários</h2>
@@ -219,11 +234,19 @@ async function sair() {
         <small v-if="i.ultimoErro" class="erro">{{ i.ultimoErro }}</small>
       </article>
 
+      <details class="sobre" :open="mostrarSobre" @toggle="mostrarSobre = !mostrarSobre">
+        <summary>Sobre este aparelho</summary>
+        <p class="aviso">
+          Este aparelho está vinculado a um agente. Para usar outro agente, é
+          necessário um aparelho diferente.
+        </p>
+        <button @click="reconfigurar">Reconfigurar aparelho</button>
+      </details>
+
       <div class="acoes fixas">
         <button class="primario" :disabled="!pendentes || enviando" @click="enviarPendentes">
           {{ enviando ? 'Enviando…' : `Enviar pendentes (${pendentes})` }}
         </button>
-        <button @click="sair">Trocar de agente</button>
       </div>
     </section>
 
@@ -255,7 +278,6 @@ body {
 header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 h1 { font-size: 1.2rem; }
 h2 { font-size: 1rem; margin-top: 24px; }
-textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8rem; padding: 8px; }
 button {
   min-height: 44px;
   padding: 0 16px;
@@ -275,7 +297,10 @@ button:disabled { opacity: 0.5; }
   background: #fff;
   border-top: 1px solid #e3e7e6;
 }
+.acoes.fixas button { width: 100%; }
 .badge { background: var(--ambar); color: #3a2400; border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; }
 .erro { color: #a3231a; }
 .aviso { color: #4a5b58; }
+.sobre { margin-top: 32px; }
+.sobre summary { cursor: pointer; color: #4a5b58; padding: 8px 0; }
 </style>

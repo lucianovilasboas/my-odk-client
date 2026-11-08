@@ -38,6 +38,16 @@ services:
       - "traefik.http.middlewares.odk-cliente-headers.headers.contentTypeNosniff=true"
       - "traefik.http.middlewares.odk-cliente-headers.headers.referrerPolicy=no-referrer"
       - "traefik.http.routers.odk-cliente.middlewares=odk-cliente-headers@docker"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8602/api/health', timeout=3).status == 200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     deploy:
       resources:
         limits:

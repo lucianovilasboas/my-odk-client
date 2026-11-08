@@ -13,6 +13,7 @@
   "dependencies": {
     "@getodk/web-forms": "^1.1.1",
     "@getodk/xforms-engine": "^1.1.1",
+    "jsqr": "^1.4.0",
     "vue": "^3.5.29"
   },
   "devDependencies": {

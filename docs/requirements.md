@@ -101,6 +101,8 @@ muda a Fase 3 — não pode ser adiado para depois do piloto.
 | Proxy reverso | **Traefik** no host, com certificado próprio |
 | Domínio | `odk-cliente.lucianovilasboas.com.br` |
 | Credencial | um App User **por agente**, configurado por QR; o servidor não guarda token (ADR 0003) |
+| Projeto Central | vem do QR, nunca fixo no servidor |
+| Aparelho | exclusivo de um agente; sem troca de agente no app |
 | Segredo do servidor | `SESSION_SECRET`, que cifra o cookie de sessão |
 | Nome do app | `My ODK Client` |
 | Nome curto | `My ODK` |

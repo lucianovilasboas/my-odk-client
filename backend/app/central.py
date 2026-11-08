@@ -82,7 +82,7 @@ def parse_qr(bruto: str, settings: Settings) -> Conexao:
     if not token or not projeto.isdigit():
         raise QrInvalido('token ou projeto inválido')
 
-    if projeto not in settings.allowed_projects:
+    if settings.allowed_projects and projeto not in settings.allowed_projects:
         raise QrInvalido('projeto fora da allowlist')
 
     return Conexao(host=host, token=token, project_id=projeto)

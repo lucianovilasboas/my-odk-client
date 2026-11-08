@@ -51,9 +51,9 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
     if not hosts:
         raise ConfigError('ALLOWED_CENTRAL_HOSTS vazio: o adaptador não pode aceitar qualquer host')
 
+    # Opcional: o projeto vem do QR. Vazio significa aceitar qualquer projeto do
+    # host permitido — quem autoriza o acesso é o App User no Central.
     projects = tuple(p.strip() for p in env.get('ALLOWED_PROJECT_IDS', '').split(',') if p.strip())
-    if not projects:
-        raise ConfigError('ALLOWED_PROJECT_IDS vazio: defina os projetos autorizados')
 
     return Settings(
         session_secret=_decode_secret(secret),

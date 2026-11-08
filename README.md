@@ -13,15 +13,17 @@ quando houver conexão e sessão válida.
 
 | Capacidade | Estado |
 |---|---|
-| Configuração por QR do App User, um por agente | ✅ |
+| Configuração por QR do App User (câmera ou colar) | ✅ |
+| Projeto e formulário vêm do QR, como no Collect | ✅ |
 | Sessão em cookie cifrado; token nunca no navegador | ✅ |
 | Baixar pacote (XML + CSV) e usar offline | ✅ |
 | Preencher com o motor oficial do ODK | ✅ |
+| Uma pergunta por tela, com progresso e retorno | ✅ |
 | Autosave e retomada de rascunho após recarregar | ✅ |
 | Finalizar e enfileirar | ✅ |
 | Enviar e confirmar no Central | ✅ (testado via adaptador) |
 | Instalar como app (manifesto + service worker) | ✅ |
-| Câmera para ler o QR | ⏳ por ora, colar o conteúdo |
+
 | Homologação em Android/iOS | ❌ pendente |
 
 ## Arquitetura
@@ -67,8 +69,14 @@ node --test 'tests/conformance/*.test.mjs'         # fixtures do corpus
 
 ## Deploy
 
-Artefatos em [`deploy/`](deploy/README.md): Traefik, domínio, limites e
-variáveis. Aplicar em produção é tarefa separada e autorizada.
+```bash
+./deploy.sh
+```
+
+O script confere pré-requisitos, cria `deploy/.env`, gera o `SESSION_SECRET`,
+constrói a imagem, sobe e espera o serviço ficar saudável. Artefatos em
+[`deploy/`](deploy/README.md). Aplicar em produção é tarefa separada e
+autorizada.
 
 ## Estrutura
 
