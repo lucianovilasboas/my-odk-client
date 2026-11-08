@@ -18,7 +18,9 @@ Documento operacional para agentes de código. Complementa o AGENTS.md global
    estados de fila transparentes.
 5. O motor XForms NÃO está escolhido (Web Forms × Enketo Express). Nada no código
    pode assumir um deles antes de `docs/adr/0001-engine-and-platform.md`.
-6. "ODK Client" é nome provisório; não sugerir produto oficial do ODK (§12).
+6. Nome do produto: **My ODK Client** (`short_name`: `My ODK`), definido pelo
+   usuário. "ODK" é marca da Get ODK Inc.; não sugerir produto oficial e revisar
+   o nome antes de qualquer distribuição pública (§12).
 7. Este arquivo vale para todo o repositório. Não criar AGENTS.md duplicado em
    `frontend/` ou `backend/`; se uma regra for específica de subprojeto, ela entra
    aqui com o caminho explícito.
