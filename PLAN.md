@@ -320,7 +320,7 @@ compartilhar runtime com o Central.
 | # | Regra |
 |---|---|
 | 1 | Origem própria (subdomínio dedicado). A PWA nunca é servida por um path do Central. |
-| 2 | Containers/processos próprios, sem compartilhar imagem, volume, rede Docker, banco, Redis ou usuário de serviço. |
+| 2 | Containers/processos próprios, sem compartilhar imagem, volume, banco, Redis ou usuário de serviço. A rede de borda do proxy é a única exceção, por necessidade de roteamento. |
 | 3 | Comunicação com o Central apenas por HTTPS público; sem acesso a banco, volumes ou socket Docker. |
 | 4 | Proxy reverso próprio. Se no mesmo host, nenhuma alteração no vhost do Central. |
 | 5 | App User com escopo mínimo; nunca conta administrativa. |
@@ -329,8 +329,8 @@ compartilhar runtime com o Central.
 | 8 | Independência operacional: atualizar o cliente não reinicia o Central; cair o cliente não impede coleta offline; cair o Central não impede preencher. |
 
 Topologia escolhida: host dedicado **ovm-1** com **Traefik**, em
-`odk-cliente.lucianovilasboas.com.br`. Valores e limites em
-`docs/requirements.md` §7.1.
+`odk-cliente.lucianovilasboas.com.br`, porta interna `8602`, limites de 512 MiB e
+1 vCPU. Artefatos em `deploy/`; valores em `docs/requirements.md` §7.1.
 
 ## 7. Modelo de dados e invariantes
 
