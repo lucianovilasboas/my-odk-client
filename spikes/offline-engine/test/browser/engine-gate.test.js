@@ -11,11 +11,12 @@ import { chromium } from 'playwright-core';
  * Gate ENGINE (PLAN.md §5.3) executado no motor oficial `@getodk/xforms-engine`
  * dentro do Chromium, com o corpus publicado.
  *
- * O que é provado aqui:
+ * Provas:
  *  1. carga do XML real com os CSV locais, sem nenhuma chamada de rede;
  *  2. recurso ausente falha em vez de cair para a rede (fail-closed);
  *  3. nova instância gera o UUID da entidade uma única vez;
- *  4. restaurar a instância NÃO regenera esse UUID.
+ *  4. restaurar a instância NÃO regenera esse UUID;
+ *  5. `instance()` resolve valor do CSV e `jr:choice-name()` devolve o rótulo.
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -24,10 +25,49 @@ const bundle = join(here, '..', '..', 'harness', 'engine.bundle.js');
 
 const fixture = (rel) => readFileSync(join(raiz, 'tests', 'fixtures', rel), 'utf8');
 
-const p1xml = fixture('xforms/form_parte_1.xml');
-const p2xml = fixture('xforms/form_parte_2.xml');
-const agentes = fixture('resources/Agentes.csv');
-const pessoas = fixture('resources/pessoas_idosas.csv');
+const corpus = {
+  p1xml: fixture('xforms/form_parte_1.xml'),
+  p2xml: fixture('xforms/form_parte_2.xml'),
+  agentes: fixture('resources/Agentes.csv'),
+  pessoas: fixture('resources/pessoas_idosas.csv'),
+};
+
+/** Sobe um contexto seguro (localhost) e injeta o bundle do motor. */
+async function abrirHarness(t) {
+  const bundleJs = readFileSync(bundle);
+  const server = createServer((req, res) => {
+    if (req.url === '/engine.bundle.js') {
+      res.writeHead(200, { 'Content-Type': 'text/javascript' });
+      res.end(bundleJs);
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(
+      '<!doctype html><meta charset="utf-8"><title>gate</title>' +
+        '<script type="module" src="/engine.bundle.js"></script>'
+    );
+  });
+
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address();
+
+  // `crypto.randomUUID` exige contexto seguro: `localhost` serve, `about:blank` não.
+  const browser = await chromium.launch({
+    executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome',
+    args: ['--no-sandbox'],
+  });
+
+  t.after(async () => {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  const page = await browser.newPage();
+  await page.goto(`http://127.0.0.1:${port}/`);
+  await page.waitForFunction(() => Boolean(window.OdkEngine), null, { timeout: 30_000 });
+
+  return page;
+}
 
 /** Executa dentro da página; não tem acesso ao escopo do Node. */
 async function rodarGate({ p1xml, p2xml, agentes, pessoas }) {
@@ -82,7 +122,6 @@ async function rodarGate({ p1xml, p2xml, agentes, pessoas }) {
       const payload2 = await restaurada.root.prepareInstancePayload({ payloadType: 'monolithic' });
       const xml2 = await payload2.data[0].get('xml_submission_file').text();
       resultado.entityIdRestaurado = idDaEntidade(xml2);
-      resultado.xmlRestaurado = xml2;
       resultado.instanceIdCriado = /<instanceID>([^<]*)<\/instanceID>/.exec(xml)?.[1] ?? null;
       resultado.instanceIdRestaurado = /<instanceID>([^<]*)<\/instanceID>/.exec(xml2)?.[1] ?? null;
     }
@@ -96,43 +135,57 @@ async function rodarGate({ p1xml, p2xml, agentes, pessoas }) {
   return resultado;
 }
 
-test('gate ENGINE no motor oficial (Chromium)', async (t) => {
-  // `crypto.randomUUID` exige contexto seguro: `localhost` serve, `about:blank` não.
-  const bundleJs = readFileSync(bundle);
-  const server = createServer((req, res) => {
-    if (req.url === '/engine.bundle.js') {
-      res.writeHead(200, { 'Content-Type': 'text/javascript' });
-      res.end(bundleJs);
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(
-      '<!doctype html><meta charset="utf-8"><title>gate</title>' +
-        '<script type="module" src="/engine.bundle.js"></script>'
-    );
-  });
+/** Executa dentro da página: preenche valores e lê os cálculos. */
+async function rodarPreenchimento({ p1xml, agentes }) {
+  const fetchFormAttachment = async (url) =>
+    decodeURIComponent(String(url).split('/').pop()) === 'Agentes.csv'
+      ? new Response(agentes, { status: 200 })
+      : new Response('', { status: 404 });
 
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const { port } = server.address();
+  const form = await OdkEngine.loadForm(p1xml, { fetchFormAttachment });
+  const instancia = form.createInstance();
 
-  t.after(async () => {
-    await new Promise((resolve) => server.close(resolve));
-  });
+  const todos = [];
+  const visitar = (node) => {
+    todos.push(node);
+    const filhos = node.currentState?.children ?? node.children;
+    if (filhos) for (const filho of filhos) visitar(filho);
+  };
+  visitar(instancia.root);
 
-  const browser = await chromium.launch({
-    executablePath: process.env.CHROME_PATH ?? '/usr/bin/google-chrome',
-    args: ['--no-sandbox'],
-  });
+  const porNodeset = new Map(
+    todos.filter((n) => n.definition?.nodeset).map((n) => [n.definition.nodeset, n])
+  );
 
-  t.after(async () => {
-    await browser.close();
-  });
+  const aguardarReatividade = () => new Promise((resolve) => setTimeout(resolve, 0));
+  const valor = (nodeset) => porNodeset.get(nodeset)?.currentState?.value ?? null;
 
-  const page = await browser.newPage();
-  await page.goto(`http://127.0.0.1:${port}/`);
-  await page.waitForFunction(() => Boolean(window.OdkEngine), null, { timeout: 30_000 });
+  const resultado = { nosetsEncontrados: porNodeset.size };
 
-  const r = await page.evaluate(rodarGate, { p1xml, p2xml, agentes, pessoas });
+  // instance() — valor de outra coluna do CSV
+  const agente = porNodeset.get('/data/preliminar/agente');
+  resultado.opcoesAgente = (agente?.currentState?.valueOptions ?? []).map((i) => i.value);
+  agente.selectValue('agente-teste-1');
+  await aguardarReatividade();
+  resultado.nomeAgente = valor('/data/preliminar/nome_agente');
+
+  // jr:choice-name() — rótulo da opção escolhida
+  const municipio = porNodeset.get('/data/preliminar/municipio');
+  const opcao = (municipio?.currentState?.valueOptions ?? []).find(
+    (i) => i.value !== 'outro-municipio'
+  );
+  municipio.selectValue(opcao.value);
+  await aguardarReatividade();
+  resultado.municipioEscolhido = opcao.value;
+  resultado.municipioLabel = opcao.label.asString;
+  resultado.municipioNome = valor('/data/preliminar/municipio_nome');
+
+  return resultado;
+}
+
+test('gate ENGINE — carga offline, entidade e restauração (Chromium)', async (t) => {
+  const page = await abrirHarness(t);
+  const r = await page.evaluate(rodarGate, corpus);
 
   assert.equal(r.excecao, undefined, `exceção no harness: ${r.excecao}`);
   assert.equal(r.fetchChamado, 0, 'o motor não pode chamar fetch: todos os recursos são locais');
@@ -153,6 +206,7 @@ test('gate ENGINE no motor oficial (Chromium)', async (t) => {
   // O motor escreve `create="true"`; o pyxform publica `create="1"`. Ambos são o
   // mesmo booleano XPath, mas a aceitação pelo Central precisa ser verificada.
   assert.match(entidade, /create="(1|true)"/);
+
   assert.equal(
     r.entityIdRestaurado,
     r.entityIdCriado,
@@ -162,5 +216,25 @@ test('gate ENGINE no motor oficial (Chromium)', async (t) => {
     r.instanceIdRestaurado,
     r.instanceIdCriado,
     'restaurar a instância regenerou o instanceID'
+  );
+});
+
+test('gate ENGINE — instance() e jr:choice-name() com valores preenchidos', async (t) => {
+  const page = await abrirHarness(t);
+  const r = await page.evaluate(rodarPreenchimento, corpus);
+
+  assert.deepEqual(r.opcoesAgente, ['agente-teste-1', 'agente-teste-2']);
+
+  assert.equal(
+    r.nomeAgente,
+    'Agente Teste 1',
+    'instance()/root/item[name=...]/Nome não resolveu a coluna Nome do CSV'
+  );
+
+  assert.notEqual(r.municipioEscolhido, 'outro-municipio');
+  assert.equal(
+    r.municipioNome,
+    r.municipioLabel,
+    'jr:choice-name() não devolveu o rótulo da escolha de município'
   );
 });

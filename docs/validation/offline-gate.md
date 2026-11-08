@@ -8,7 +8,7 @@
 | # | Critério | Web Forms | Enketo Express | Evidência |
 |---|---|---|---|---|
 | 1 | XML e dependências carregam com rede bloqueada | **aprovado** (Chromium desktop) | não avaliado | `spikes/offline-engine/test/browser/engine-gate.test.js` |
-| 2 | XPath, tipos e fluxo sem divergência significativa | parcial: carrega; falta exercitar `instance()`/`jr:choice-name` com valores | não avaliado | idem |
+| 2 | XPath, tipos e fluxo sem divergência significativa | **aprovado**: `instance()` devolve valor do CSV e `jr:choice-name()` devolve o rótulo | não avaliado | idem |
 | 3 | Exportar/restaurar rascunho sem regenerar UUID/defaults | **aprovado** (`instanceID` e id da entidade estáveis) | não avaliado | idem |
 | 4 | Repeats, idiomas e nós não relevantes preservados | não aplicável: corpus sem repeats e com um idioma | não avaliado | — |
 | 5 | XML, metadados e anexos aceitos pelo Central | não testado (depende de submissão, Fase 4) | não avaliado | — |
