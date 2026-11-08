@@ -42,10 +42,10 @@ Com os XML reais de `form_parte_1` e `form_parte_2` e os CSV sintéticos:
 |---|---|
 | 1. XML + dependências locais com rede bloqueada | ✅ carrega; `fetch` chamado **0** vezes |
 | Falha fechada sem o CSV | ✅ `status: failure` em vez de buscar fora |
+| 2. XPath: `instance()` e `jr:choice-name()` | ✅ `instance()` devolve `Agente Teste 1` da coluna `Nome`; `jr:choice-name()` devolve o rótulo do município |
 | 3. Restore sem regenerar UUID | ✅ id da entidade e `instanceID` idênticos após restaurar |
 | 7. Recursos interceptáveis | ✅ via `fetchFormAttachment` |
 | Entidade criada no payload | ✅ `<entity dataset="pessoas_idosas" create="true" id="<uuid>">` |
-| 2. XPath completo (`instance()`, `jr:choice-name`) | ⏳ formulário carrega; falta exercitar com valores preenchidos |
 | 4. Repeats/idiomas | não aplicável (corpus não tem) |
 | 5. Aceitação pelo Central | ⏳ depende de submissão real (Fase 4) |
 | 6. Captura de alterações para autosave | ⏳ `prepareInstancePayload` funciona; falta fio de autosave |
@@ -68,4 +68,3 @@ Isso não é limitação do produto, mas define como a suíte precisa ser montad
 1. Repetir o gate em aparelho Android e iPhone reais.
 2. Submissão de teste aceita pelo Central, incluindo a entidade.
 3. Comparar com Enketo Express (exige infraestrutura; não avaliado aqui).
-4. Exercitar `instance()` e `jr:choice-name` com valores preenchidos.
