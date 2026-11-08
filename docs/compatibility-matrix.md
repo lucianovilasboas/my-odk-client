@@ -13,17 +13,20 @@
   ou decisão de arquitetura (§2.4).
 
 Emulador, WebKit desktop e "funciona na minha máquina" não produzem `aprovado`.
+A entrega é PWA: sem **instalação pelo ícone** e **abertura offline pelo ícone**,
+a plataforma não entra na matriz, mesmo que o site funcione no navegador
+(`PLAN.md` §22).
 
 ## 2. Plataformas
 
-| Plataforma | Estratégia | Abertura fria offline | Rascunho após reboot | `persist()` concedido | Captura de mídia | Envio ao reabrir | Status |
-|---|---|---|---|---|---|---|---|
-| Android + Chrome (versão a definir) | PWA instalada | não testado | não testado | não testado | não testado | não testado | não homologado |
-| iPhone/iPad + Safari (versão a definir) | PWA na tela inicial | não testado | não testado | não testado | não testado | não testado | não homologado |
-| Desktop Chrome/Edge | SPA responsiva | não testado | não testado | não testado | não testado | não testado | não homologado |
-| Desktop Firefox/Safari | SPA responsiva | não testado | não testado | não testado | não testado | não testado | não homologado |
-| WebView / navegador embutido | fora da matriz inicial | — | — | — | — | — | não suportado |
-| Distribuição híbrida (futura) | repositório nativo | — | — | — | — | — | não avaliado |
+| Plataforma | Estratégia | Instala pelo ícone | Abre offline pelo ícone | Abertura fria offline | Rascunho após reboot | `persist()` concedido | Atualiza sem perder dados | Envio ao reabrir | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| Android + Chrome (versão a definir) | PWA instalada | não testado | não testado | não testado | não testado | não testado | não testado | não testado | não homologado |
+| iPhone/iPad + Safari | **fora do primeiro ciclo** | — | — | — | — | — | — | — | não homologado |
+| Desktop Chrome/Edge | desenvolvimento apenas | não testado | não testado | não testado | não testado | não testado | não testado | não testado | não homologado |
+| Desktop Firefox/Safari | desenvolvimento apenas | — | — | — | — | — | — | — | não homologado |
+| WebView / navegador embutido | fora da matriz | — | — | — | — | — | — | — | não suportado |
+| Distribuição híbrida (futura) | contingência nomeada | — | — | — | — | — | — | — | não avaliado |
 
 Observação registrada em §14: a regra de sete dias do WebKit trata de dias de uso
 do navegador sem interação com o site, e aplicativo instalado na Tela de Início

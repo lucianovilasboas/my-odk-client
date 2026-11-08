@@ -69,9 +69,9 @@ recebidas usa identidade separada, nunca a mesma do coletor.
 
 | Item | Resposta |
 |---|---|
-| Android homologado (modelo, versão, navegador) | PENDENTE |
-| iOS/iPadOS homologado (modelo, versão) | PENDENTE |
-| Desktop homologado (SO, navegador) | PENDENTE |
+| Android homologado (modelo, versão, navegador) | PENDENTE — primeiro ciclo é somente Android |
+| iOS/iPadOS homologado (modelo, versão) | Fora do primeiro ciclo; matriz registra "não homologado" |
+| Desktop homologado (SO, navegador) | Fora da homologação; uso apenas em desenvolvimento |
 | Tempo máximo de coleta sem rede | PENDENTE |
 | Quantidade máxima de instâncias pendentes | PENDENTE |
 | Volume máximo de dados locais | PENDENTE |
@@ -97,10 +97,22 @@ muda a Fase 3 — não pode ser adiado para depois do piloto.
 
 | Item | Resposta |
 |---|---|
-| Acesso privado (VPN/rede institucional) ou público? | PENDENTE |
-| Domínio e certificado TLS | PENDENTE |
-| Aplicação de loja (Play/App Store) necessária? | PENDENTE |
-| Aceita variante híbrida se a PWA falhar no gate? | PENDENTE |
+| Topologia | Host dedicado **ovm-1**, stack própria (não roda na stack do Central) |
+| Proxy reverso | **Traefik** no host, com certificado próprio |
+| Domínio | `odk-cliente.lucianovilasboas.com.br` |
+| Certificado TLS | Let's Encrypt via Traefik, renovação automática |
+| Acesso privado ou público? | Público com HTTPS; sem restrição por VPN no primeiro ciclo |
+| Aplicação de loja (Play/App Store) necessária? | Não — instalação pela tela inicial |
+| Aceita variante híbrida se a PWA falhar no gate? | Sim, como contingência nomeada (`PLAN.md` §22.3) |
+
+### 7.1 Regras de isolamento aplicadas
+
+O cliente não compartilha runtime com o Central (`PLAN.md` §6.4):
+containers próprios, rede própria, proxy próprio, sem acesso ao banco, volumes ou
+socket Docker do Central. A comunicação é HTTPS público, como o Collect faz.
+
+Limites por container, tamanho máximo de upload e política de log ficam em
+`deploy/` na Fase 2a e precisam ser aprovados antes do piloto.
 
 ## 8. Recorte do MVP
 

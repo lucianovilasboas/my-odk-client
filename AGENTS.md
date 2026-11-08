@@ -107,6 +107,9 @@ Documento operacional para agentes de código. Complementa o AGENTS.md global
 - Acessibilidade: rótulos associados, erros anunciados (`aria-live`), foco
   previsível, alvos de toque adequados, 320–1280 px, safe areas, teclado virtual.
 - iPhone: informar explicitamente que o envio ocorre com o app aberto.
+- A entrega é PWA instalável: abre pelo ícone, em `standalone`, e funciona sem
+  rede. Manifesto, ícones e service worker são critério de aceite, não detalhe.
+- Não declarar "pronto para campo" sem instalação e abertura offline pelo ícone.
 
 ## 7. Segurança, privacidade e licenças
 
@@ -156,6 +159,8 @@ Documento operacional para agentes de código. Complementa o AGENTS.md global
 - Não iniciar uma fase sem o gate da anterior aprovado (§15).
 - O diretório ainda não é um repositório git. `git init` e o primeiro commit
   fazem parte da Fase 2 e dependem de autorização de BUILD.
+- Nunca implantar dentro da stack do ODK Central nem alterar o vhost do Central.
+  O cliente é stack própria, com proxy e limites próprios (`PLAN.md` §6.4).
 
 ## 11. Proibições rápidas
 
@@ -166,3 +171,4 @@ Documento operacional para agentes de código. Complementa o AGENTS.md global
 - Apagar pendentes para liberar espaço.
 - Substituir recurso não suportado por campo de texto livre.
 - Declarar "offline homologado" com base em emulador ou WebKit desktop.
+- Publicar a PWA por um path do Central ou dentro do compose do Central.

@@ -37,7 +37,7 @@ Preencher uma linha por execução. `Resultado` só aceita `aprovado` ou
 | T07 — `QuotaExceededError` | PENDENTE | | | | | não testado | |
 | T08 — rede cai no download de recurso | PENDENTE | | | | | não testado | |
 | T10 — Central recebe, resposta se perde | PENDENTE | | | | | não testado | |
-| T24 — iPhone fechado, rede retorna | PENDENTE | | | | | não testado | |
+| T24 — iPhone fechado, rede retorna | fora do primeiro ciclo | — | — | — | — | não homologado | |
 
 ## 3. Persistência e cota
 
