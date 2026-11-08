@@ -15,9 +15,9 @@ services:
     restart: unless-stopped
     environment:
       APP_PORT: "8602"
-      CENTRAL_URL: ${CENTRAL_URL}
-      CENTRAL_PROJECT_ID: ${CENTRAL_PROJECT_ID}
-      CENTRAL_APP_USER_TOKEN: ${CENTRAL_APP_USER_TOKEN}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ALLOWED_CENTRAL_HOSTS: ${ALLOWED_CENTRAL_HOSTS}
+      ALLOWED_PROJECT_IDS: ${ALLOWED_PROJECT_IDS}
     expose:
       - "8602"
     networks:

@@ -282,7 +282,9 @@ Frontend:
 Backend:
 
 - API REST independente; não importa componentes nem estado interno da SPA.
-- Guarda credenciais de upstream cifradas e mantém sessão própria com cookie HttpOnly/Secure e proteção CSRF.
+- **Uma credencial por agente.** Recebe o QR do App User uma única vez, valida contra o Central e o troca por sessão; nunca opera com token único compartilhado (§ADR 0003).
+- **Não persiste token em claro.** A sessão é um cookie `HttpOnly/Secure/SameSite=Strict` cujo conteúdo — token, host, projeto e expiração — é cifrado com `SESSION_SECRET`. Sem banco de sessões no baseline.
+- Deriva um `workspaceId` opaco por `HMAC(token)` e o devolve ao cliente; o cliente particiona o armazenamento local por ele e nunca recebe o token de volta.
 - Conecta somente a servidores Central autorizados; aplica limites, valida XML de forma segura, não interpreta lógica de formulário.
 - Mantém ledger de idempotência/recibos, mas não oferece uma segunda fila de coleta nem armazena submissões indefinidamente no MVP.
 - Encaminha payloads sem transformar os bytes do XML congelado. Processamento transitório de anexos tem limpeza e limites de disco/memória.
@@ -475,9 +477,9 @@ Este contrato é projeto novo, não uma API existente. Deve ser formalizado em `
 
 | Método e rota | Entrada | Saída/semântica |
 |---|---|---|
-| `POST /api/v1/connections` | JSON `{label, approvedServerId, projectId, appUserCredential}` obtido de formulário seguro/QR | 201 `{connectionId, scope}` e cookie próprio; jamais devolver o segredo |
-| `GET /api/v1/session` | Cookie | 200 identidade/escopos ou 401; não é requisito para reabrir dados offline |
-| `DELETE /api/v1/session` | Cookie + CSRF | 204 encerra sessão própria, sem revogar automaticamente App User nem apagar pendentes |
+| `POST /api/v1/connections` | JSON com o **conteúdo bruto do QR** do App User (`server_url` contendo `/v1/key/<token>/projects/{id}`) ou token + projeto | 201 `{connectionId, workspaceId, scope}` e cookie de sessão cifrado; jamais devolver o segredo |
+| `GET /api/v1/session` | Cookie | 200 `{workspaceId, escopos, expiraEm}` ou 401; não é requisito para reabrir dados offline |
+| `DELETE /api/v1/session` | Cookie + CSRF | 204 encerra a sessão do aparelho; não revoga o App User nem apaga pendentes |
 | `PUT /api/v1/connections/{id}/credential` | Nova credencial + CSRF | 204 após validar mesma identidade/escopo permitido; troca de identidade exige reaprovação de pendentes |
 | `GET /api/v1/connections/{id}/forms` | Cookie, cursor se aplicável ao adaptador | 200 catálogo normalizado, sem URLs com segredo |
 | `POST /api/v1/connections/{id}/form-packages` | JSON `{xmlFormId}` | 201 descrição de pacote, XML e recursos por IDs opacos; falha se snapshot consistente não puder ser obtido |
@@ -485,6 +487,10 @@ Este contrato é projeto novo, não uma API existente. Deve ser formalizado em `
 | `POST /api/v1/connections/{id}/submission-attempts` | Multipart: envelope, XML final, anexos; header `Idempotency-Key` | 201 recibo quando confirmado; 200 no replay já confirmado; erro estruturado ou resultado incerto, nunca 202 interpretado como recebido pelo Central |
 | `GET /api/v1/connections/{id}/submission-attempts/{attemptId}` | Cookie | 200 estado do ledger próprio: confirmado, parcial ou incerto; 404 não prova ausência no Central |
 | `GET /api/v1/health` | Sem dados privados | 200/503 saúde do adaptador, sem garantia de alcance do Central |
+
+O conteúdo do QR é entrada não confiável: o adaptador extrai host, token e projeto, valida o
+host contra allowlist (anti-SSRF) e confirma o acesso chamando o `formList` com essa
+credencial antes de emitir a sessão. Erro de credencial não cria sessão nem grava nada.
 
 `Idempotency-Key` pertence à API própria: não presumir suporte a esse header pelo Central. Vincular a chave a conexão, identidade, `instanceID` e digest do envelope; reutilização com conteúdo diferente retorna 409. Requisições concorrentes recebem erro retryable enquanto a primeira possui lease, não dois envios independentes.
 
@@ -902,6 +908,8 @@ instalado. "SPA" passa a descrever apenas a forma de construir a interface.
 | Instalação | oferecida no Android; instruída no iOS (Compartilhar → Adicionar à Tela de Início) |
 | Standalone | sem barra de endereço, safe areas respeitadas, botão físico "voltar" do Android contido durante o preenchimento |
 | Abertura offline | abrir pelo ícone em modo avião, após a preparação |
+| Configuração | QR do App User do agente — câmera no Android, com "colar conteúdo" como caminho garantido |
+| Uso compartilhado | cada agente tem área própria, particionada por `workspaceId`; trocar de usuário não expõe dados do anterior |
 
 ### 22.2 Service worker
 
