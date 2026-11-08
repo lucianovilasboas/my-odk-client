@@ -155,15 +155,22 @@ Documento operacional para agentes de código. Complementa o AGENTS.md global
 
 ## 10. Fluxo de trabalho
 
-- Toda alteração nasce em branch própria a partir da `main` atualizada; nunca na
-  `main`.
+- **Toda alteração nasce em branch própria**, criada a partir da `main`
+  atualizada: código, documentação, configuração, assets e correções de uma
+  linha. Nunca commitar direto na `main`.
+- Nome da branch diz o tipo e o assunto: `feat/`, `fix/`, `docs/`, `test/`,
+  `chore/`, `refactor/`.
 - Commits pequenos e temáticos (Conventional Commits).
 - Antes de encerrar: typecheck, lint, unitários e integrações afetadas verdes.
 - Merge local e parada para teste manual. Sem push, PR, tag, release ou deploy
   sem autorização explícita.
 - Não iniciar uma fase sem o gate da anterior aprovado (§15).
-- O diretório ainda não é um repositório git. `git init` e o primeiro commit
-  fazem parte da Fase 2 e dependem de autorização de BUILD.
+- O repositório já existe, com remoto em `github.com/lucianovilasboas/my-odk-client`.
+  Push continua exigindo autorização explícita em cada rodada.
+- Toda versão implantada recebe tag `vX.Y.Z`; o deploy sai da tag, nunca do
+  topo móvel da `main`.
+- Reversão de algo já publicado é `git revert` do merge na `main`. Nunca
+  `reset --hard` em histórico publicado. Branch não mesclada pode ser descartada.
 - Nunca implantar dentro da stack do ODK Central nem alterar o vhost do Central.
   O cliente é stack própria, com proxy e limites próprios (`PLAN.md` §6.4).
 
