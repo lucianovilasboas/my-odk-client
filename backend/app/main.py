@@ -34,7 +34,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title='My ODK Client',
-    version='0.5.1',
+    version='0.5.2',
     docs_url='/api/docs',
     openapi_url='/api/openapi.json',
     lifespan=lifespan,

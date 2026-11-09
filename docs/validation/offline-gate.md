@@ -95,6 +95,10 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | Contraste no tema claro | 16,2:1 · 5,6:1 · 6,5:1 (todos acima de AA) |
 | Hub do projeto | 5 pílulas: preencher, rascunhos, fila, enviados, reconfigurar |
 | Som do leitor | 2.200 Hz no bipe; sucesso 740→1.100 Hz |
+| Abrir o app sem rede | projeto e formulários vêm do IndexedDB; "Preencher" habilitado |
+| Coletar sem rede | campo aceita digitação e autosave confirma "Salvo neste aparelho" |
+| Atualizar sem rede | botão desabilitado, sem erro previsível |
+| Captive portal | chamadas abortam em 6 s em vez de pendurar a abertura |
 
 ## 5. Conclusão do gate
 
