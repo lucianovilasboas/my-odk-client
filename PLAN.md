@@ -907,7 +907,7 @@ instalado. "SPA" passa a descrever apenas a forma de construir a interface.
 | Ícones | 192 px, 512 px e um `purpose: maskable`; fonte em `assets/branding/` |
 | Instalação | oferecida no Android; instruída no iOS (Compartilhar → Adicionar à Tela de Início) |
 | Standalone | sem barra de endereço, safe areas respeitadas, botão físico "voltar" do Android contido durante o preenchimento |
-| Abertura offline | abrir pelo ícone em modo avião, após a preparação |
+| Abertura offline | abrir pelo ícone em modo avião, após a preparação. Comprovado em iPhone iOS 27.2.1 (09/11/2026): **instalado** passa; em aba do Safari falha — instalar é requisito, não conveniência |
 | Configuração | QR do App User do agente — câmera (`BarcodeDetector`, com `jsQR` de fallback) ou colar o conteúdo. O projeto vem no QR; não há projeto fixo no servidor |
 | Vínculo | um aparelho por agente: não há troca de agente no app. "Reconfigurar aparelho" existe só como recuperação de QR errado, bloqueada enquanto houver fila |
 

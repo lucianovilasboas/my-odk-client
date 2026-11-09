@@ -14,10 +14,21 @@
 
 Emulador, WebKit desktop e "funciona na minha máquina" não produzem `aprovado`.
 
-**iPhone — 09/11/2026:** instalação, configuração por QR, download de pacote e
-coleta funcionaram em aparelho real (modelo e versão do iOS a registrar). Falta
-o restante da matriz: abertura fria, rascunho após reboot, `persist()` e envio ao
-reabrir. Por isso o status é "em homologação", não "aprovado".
+**iPhone — iOS 27.2.1, 09/11/2026 — app instalado na Tela de Início:**
+
+Passou em: instalação, configuração por QR, download de pacote, coleta, abertura
+fria sem rede **após reiniciar o aparelho**, restauração do rascunho no mesmo
+ponto e envio automático ao reconectar.
+
+**Em aba do Safari, sem instalar, a mesma abertura offline falhou:** a página não
+carregou até a rede voltar, ficando em carregamento indefinido. Repetido após a
+instalação, passou.
+
+Conclusão operacional: **instalar na Tela de Início é requisito, não conveniência**
+(`PLAN.md` §22.3). Uso em aba de navegador não entra na matriz.
+
+Falta para "aprovado" completo: `persist()` concedido, atualização de versão com
+pendentes, e o modelo do aparelho (a registrar).
 A entrega é PWA: sem **instalação pelo ícone** e **abertura offline pelo ícone**,
 a plataforma não entra na matriz, mesmo que o site funcione no navegador
 (`PLAN.md` §22).
