@@ -27,6 +27,7 @@ quando houver conexão e sessão válida.
 | Perguntas dependentes na mesma tela (tipo `field-list`) | ✅ |
 | Obrigatórias bloqueiam o avanço | ✅ |
 | Geopoint com captura de GPS do aparelho | ✅ |
+| Instruções de permissão de localização por plataforma | ✅ |
 | Autosave e retomada no mesmo ponto do rascunho | ✅ |
 | Descartar rascunho, com confirmação | ✅ |
 | Hub com Rascunhos, Pronto para enviar e Enviado | ✅ |

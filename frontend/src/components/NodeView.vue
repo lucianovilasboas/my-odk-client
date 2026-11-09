@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { estadoPermissao, instrucoes, textoCopiado } from '../localizacao'
 import SelecaoBusca from './SelecaoBusca.vue'
 import { usaCombobox, type MapaAparencias } from '../aparencias'
 
@@ -65,6 +66,41 @@ const gps = computed(() => {
 })
 const capturando = ref(false)
 const erroGps = ref<string | null>(null)
+/** Permissão negada: o iOS não pergunta de novo, então mostramos o caminho. */
+const bloqueio = ref(false)
+const copiado = ref(false)
+
+const ehGeopoint = computed(() => tipo.value === 'input' && tipoValor.value === 'geopoint')
+
+async function conferirPermissao() {
+  const estado = await estadoPermissao()
+  if (estado === 'granted') bloqueio.value = false
+  if (estado === 'denied') bloqueio.value = true
+}
+
+function aoVoltarParaApp() {
+  if (document.visibilityState === 'visible') void conferirPermissao()
+}
+
+onMounted(() => {
+  if (!ehGeopoint.value) return
+  void conferirPermissao()
+  document.addEventListener('visibilitychange', aoVoltarParaApp)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', aoVoltarParaApp)
+})
+
+async function copiarInstrucoes() {
+  try {
+    await navigator.clipboard.writeText(textoCopiado())
+    copiado.value = true
+    setTimeout(() => (copiado.value = false), 2000)
+  } catch {
+    erroGps.value = 'Não foi possível copiar. Leia as instruções acima.'
+  }
+}
 
 function paraTexto(bruto: unknown): string {
   if (bruto === null || bruto === undefined) return ''
@@ -135,10 +171,12 @@ function capturarLocalizacao() {
     },
     (falha) => {
       capturando.value = false
-      erroGps.value =
-        falha.code === falha.PERMISSION_DENIED
-          ? 'Permissão de localização negada. Autorize nas configurações do navegador.'
-          : 'Não foi possível obter a localização. Tente em local aberto.'
+      if (falha.code === falha.PERMISSION_DENIED) {
+        bloqueio.value = true
+        erroGps.value = 'A localização está bloqueada para este aplicativo.'
+      } else {
+        erroGps.value = 'Não foi possível obter a localização. Tente em local aberto.'
+      }
     },
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
   )
@@ -174,13 +212,33 @@ function limparLocalizacao() {
         <small>· precisão {{ Math.round(gps.accuracy) }} m</small>
       </p>
       <p v-else class="sem-localizacao">Nenhuma localização capturada.</p>
-      <div class="acoes-gps">
+
+      <div v-if="bloqueio" class="ajuda-permissao" role="alert">
+        <strong>Localização bloqueada</strong>
+        <p class="texto-ajuda">
+          O navegador não vai perguntar de novo. Libere nas configurações do aparelho:
+        </p>
+        <ol>
+          <li v-for="(passo, i) in instrucoes()" :key="i">{{ passo }}</li>
+        </ol>
+        <div class="acoes-gps">
+          <button type="button" :disabled="capturando" @click="capturarLocalizacao">
+            {{ capturando ? 'Tentando…' : 'Tentar novamente' }}
+          </button>
+          <button type="button" class="secundario" @click="copiarInstrucoes">
+            {{ copiado ? 'Copiado' : 'Copiar instruções' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-else class="acoes-gps">
         <button type="button" :disabled="capturando" @click="capturarLocalizacao">
           {{ capturando ? 'Capturando…' : gps ? 'Capturar de novo' : 'Capturar localização' }}
         </button>
         <button v-if="gps" type="button" class="secundario" @click="limparLocalizacao">Limpar</button>
       </div>
-      <small v-if="erroGps" class="erro" role="alert">{{ erroGps }}</small>
+
+      <small v-if="erroGps && !bloqueio" class="erro" role="alert">{{ erroGps }}</small>
     </div>
 
     <div v-else-if="tipo === 'input'" class="campo">
@@ -264,6 +322,15 @@ export default { name: 'NodeView' }
 .coordenadas { margin: 0; font-variant-numeric: tabular-nums; }
 .sem-localizacao { margin: 0; color: var(--texto-2); font-size: 0.9rem; }
 .acoes-gps { display: flex; gap: 10px; flex-wrap: wrap; }
+.ajuda-permissao {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--superficie-2);
+}
+.ajuda-permissao ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 0.9rem; }
+.texto-ajuda { margin: 0; font-size: 0.9rem; }
 .acoes-gps button {
   min-height: 48px; padding: 0 18px; border-radius: 999px;
   border: 1px solid var(--divisor); background: var(--superficie); color: var(--texto);
