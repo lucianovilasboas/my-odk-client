@@ -13,6 +13,11 @@
   ou decisão de arquitetura (§2.4).
 
 Emulador, WebKit desktop e "funciona na minha máquina" não produzem `aprovado`.
+
+**iPhone — 09/11/2026:** instalação, configuração por QR, download de pacote e
+coleta funcionaram em aparelho real (modelo e versão do iOS a registrar). Falta
+o restante da matriz: abertura fria, rascunho após reboot, `persist()` e envio ao
+reabrir. Por isso o status é "em homologação", não "aprovado".
 A entrega é PWA: sem **instalação pelo ícone** e **abertura offline pelo ícone**,
 a plataforma não entra na matriz, mesmo que o site funcione no navegador
 (`PLAN.md` §22).
@@ -22,7 +27,7 @@ a plataforma não entra na matriz, mesmo que o site funcione no navegador
 | Plataforma | Estratégia | Instala pelo ícone | Abre offline pelo ícone | Abertura fria offline | Rascunho após reboot | `persist()` concedido | Atualiza sem perder dados | Envio ao reabrir | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | Android + Chrome (versão a definir) | PWA instalada | não testado | não testado | não testado | não testado | não testado | não testado | não testado | não homologado |
-| iPhone/iPad + Safari | **fora do primeiro ciclo** | — | — | — | — | — | — | — | não homologado |
+| iPhone/iPad + Safari | **em homologação** | testado | não testado | não testado | não testado | não testado | não testado | não testado | em homologação |
 | Desktop Chrome/Edge | desenvolvimento apenas | não testado | não testado | não testado | não testado | não testado | não testado | não testado | não homologado |
 | Desktop Firefox/Safari | desenvolvimento apenas | — | — | — | — | — | — | — | não homologado |
 | WebView / navegador embutido | fora da matriz | — | — | — | — | — | — | — | não suportado |

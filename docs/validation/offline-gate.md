@@ -103,6 +103,8 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | Reconectar | envio automático dispara sozinho e a fila esvazia |
 | Diário de envio | uma entrada por tentativa, sem respostas nem token no registro |
 | Expurgo do diário | 520 registros (metade com 100 dias) → 260 restantes, 0 vencidos |
+| Localização negada | painel com o caminho exato do iOS e botão "Tentar novamente" |
+| iPhone real (09/11/2026) | instalação, QR, download e coleta funcionaram |
 
 ## 5. Conclusão do gate
 
