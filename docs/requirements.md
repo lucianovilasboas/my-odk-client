@@ -70,7 +70,7 @@ recebidas usa identidade separada, nunca a mesma do coletor.
 | Item | Resposta |
 |---|---|
 | Android homologado (modelo, versão, navegador) | PENDENTE — primeiro ciclo é somente Android |
-| iOS/iPadOS homologado (modelo, versão) | **Em homologação**: teste funcional em 09/11/2026; modelo e versão a registrar |
+| iOS/iPadOS homologado (modelo, versão) | iOS 27.2.1, app instalado — homologado nos cenários testados em 09/11/2026; modelo do aparelho a registrar |
 | Desktop homologado (SO, navegador) | Fora da homologação; uso apenas em desenvolvimento |
 | Tempo máximo de coleta sem rede | PENDENTE |
 | Quantidade máxima de instâncias pendentes | PENDENTE |
