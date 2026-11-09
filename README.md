@@ -33,6 +33,8 @@ quando houver conexão e sessão válida.
 | Tema claro/escuro seguindo o sistema | ✅ |
 | Versão visível no rodapé, vinda da tag do build | ✅ |
 | Abrir e coletar offline, com o projeto identificado | ✅ |
+| Envio automático em primeiro plano, com verificação de alcance | ✅ |
+| Diário de tentativas de envio (90 dias ou 500 registros) | ✅ |
 | Finalizar e enfileirar | ✅ |
 | Finalizar envia na hora se houver rede; senão enfileira | ✅ |
 | Enviar e confirmar no Central | ✅ |

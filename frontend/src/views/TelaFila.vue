@@ -5,6 +5,7 @@ import type { ItemFila } from '../storage'
 defineProps<{
   itens: ItemFila[]
   enviando: boolean
+  podeEnviar: boolean
   nomeDoFormulario: (id: string) => string
 }>()
 defineEmits<{ (e: 'enviar'): void }>()
@@ -30,9 +31,17 @@ const quando = (ms: number) => new Date(ms).toLocaleString('pt-BR')
     </div>
 
     <div v-if="itens.length" class="acoes">
-      <BotaoPilula variante="primario" icone="enviar" :desabilitado="enviando" @click="$emit('enviar')">
-        {{ enviando ? 'Enviando…' : `Enviar ${itens.length} agora` }}
+      <BotaoPilula
+        variante="primario"
+        icone="enviar"
+        :desabilitado="enviando || !podeEnviar"
+        @click="$emit('enviar')"
+      >
+        {{ !podeEnviar ? 'Sem conexão' : enviando ? 'Enviando…' : `Enviar ${itens.length} agora` }}
       </BotaoPilula>
+      <p v-if="!podeEnviar" class="texto-secundario dica">
+        O envio automático acontece assim que o aplicativo alcançar o servidor.
+      </p>
     </div>
   </section>
 </template>
@@ -47,5 +56,6 @@ const quando = (ms: number) => new Date(ms).toLocaleString('pt-BR')
   box-shadow: var(--sombra);
 }
 .meta { margin: 0; font-size: 0.85rem; }
-.acoes { margin-top: 20px; }
+.acoes { margin-top: 20px; display: grid; gap: 10px; }
+.dica { margin: 0; font-size: 0.8rem; }
 </style>

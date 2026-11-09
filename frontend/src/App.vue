@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { api, ApiError, type Formulario } from './api'
 import {
   abrirBase,
@@ -9,8 +9,11 @@ import {
   type Base,
   type ItemFila,
   type Rascunho,
+  type RegistroEnvio,
 } from './storage'
 import { somErro, somSucesso } from './som'
+import { iniciarAutoEnvio, type ControladorEnvio, type EstadoEnvio, type ResultadoLote } from './envio/auto'
+import FaixaEnvio from './components/FaixaEnvio.vue'
 import { VERSAO } from './versao'
 import Icone from './components/Icone.vue'
 import FillView from './views/FillView.vue'
@@ -50,7 +53,12 @@ const formularios = ref<Formulario[]>([])
 const disponiveis = reactive(new Set<string>())
 const fila = ref<ItemFila[]>([])
 const rascunhos = ref<Rascunho[]>([])
-const enviando = ref(false)
+const envioEstado = ref<EstadoEnvio>('ocioso')
+const envioAtual = ref(0)
+const envioTotal = ref(0)
+const enviosLog = ref<RegistroEnvio[]>([])
+const enviando = computed(() => envioEstado.value !== 'ocioso')
+let controlador: ControladorEnvio | null = null
 
 /** Sem rede, "Atualizar" só pode falhar; evitamos o erro previsível. */
 const online = ref(navigator.onLine)
@@ -94,6 +102,7 @@ async function carregarBase(id: string) {
   workspace.value = id
   definirWorkspace(id)
   base.value = abrirBase(id)
+  await base.value.expurgarEnvios()
   await atualizarPainel()
 
   // O escopo vem do servidor quando há rede; offline, o último salvo identifica
@@ -123,6 +132,7 @@ async function atualizarPainel() {
   if (!base.value) return
   rascunhos.value = await base.value.listarRascunhos()
   fila.value = await base.value.listarFila()
+  enviosLog.value = await base.value.listarEnvios(50)
 }
 
 onMounted(async () => {
@@ -149,6 +159,7 @@ onMounted(async () => {
   }
 
   tela.value = 'projeto'
+  iniciarEnvioAutomatico()
 })
 
 async function conectar(qr: string) {
@@ -162,6 +173,7 @@ async function conectar(qr: string) {
     tela.value = 'projeto'
     somSucesso()
     await sincronizar()
+    iniciarEnvioAutomatico()
   } catch (e) {
     erro.value = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)
     somErro()
@@ -261,21 +273,60 @@ function aoFinalizar(enviado: boolean) {
   sairDoPreenchimento()
 }
 
-async function enviarPendentes() {
+async function registrar(
+  item: ItemFila,
+  resultado: 'confirmado' | 'falha',
+  codigo: string | undefined,
+  httpStatus: number | undefined,
+  duracaoMs: number,
+) {
   if (!base.value) return
-  enviando.value = true
-  erro.value = null
-  for (const item of pendentes.value) {
+  await base.value.registrarEnvio({
+    id: crypto.randomUUID(),
+    em: Date.now(),
+    localId: item.localId,
+    xmlFormId: item.xmlFormId,
+    instanceID: /<instanceID>([^<]*)<\/instanceID>/.exec(item.xml)?.[1] ?? '',
+    resultado,
+    tentativa: item.tentativas + 1,
+    codigo,
+    httpStatus,
+    duracaoMs: Math.round(duracaoMs),
+    alvo: `${host.value ?? ''} / projeto ${projetoId.value ?? ''}`,
+  })
+}
+
+/** Um lote: envia todos os pendentes, registra cada tentativa e informa se deve parar. */
+async function enviarLote(): Promise<ResultadoLote> {
+  if (!base.value) return { confirmados: 0, falhas: 0, parar: true }
+
+  const itens = [...pendentes.value]
+  let confirmados = 0
+  let falhas = 0
+  let parar = false
+
+  envioTotal.value = itens.length
+  envioAtual.value = 0
+
+  for (const [indice, item] of itens.entries()) {
+    envioAtual.value = indice + 1
+    const comeco = performance.now()
+
     try {
       await api.enviar(item.xml)
+      confirmados += 1
       await base.value.atualizarItem({
         ...item,
         estado: 'confirmado',
         ultimoErro: undefined,
         atualizadoEm: Date.now(),
       })
+      await registrar(item, 'confirmado', undefined, 201, performance.now() - comeco)
     } catch (e) {
       const apiErro = e instanceof ApiError ? e : null
+      falhas += 1
+      const definitivo = apiErro?.status === 401 || apiErro?.status === 409 || apiErro?.status === 422
+
       await base.value.atualizarItem({
         ...item,
         estado: apiErro?.status === 401 ? 'erro' : 'pendente',
@@ -283,11 +334,50 @@ async function enviarPendentes() {
         ultimoErro: apiErro ? `${apiErro.code}: ${apiErro.message}` : String(e),
         atualizadoEm: Date.now(),
       })
+      await registrar(
+        item,
+        'falha',
+        apiErro?.code ?? 'UNKNOWN',
+        apiErro?.status,
+        performance.now() - comeco,
+      )
+
+      if (definitivo) {
+        erro.value = apiErro
+          ? `${apiErro.code}: ${apiErro.message}`
+          : 'o servidor recusou o envio'
+        parar = true
+        await atualizarPainel()
+        break
+      }
     }
+
     await atualizarPainel()
   }
-  enviando.value = false
-  aviso.value = 'Envio concluído. Toque em Atualizar para trazer os cadastros novos.'
+
+  await atualizarPainel()
+  return { confirmados, falhas, parar }
+}
+
+function aoConcluirEnvio(resultado: ResultadoLote) {
+  if (resultado.confirmados > 0) {
+    aviso.value =
+      resultado.falhas === 0
+        ? 'Enviado e aceito pelo servidor.'
+        : `${resultado.confirmados} enviado(s), ${resultado.falhas} pendente(s).`
+  }
+}
+
+function iniciarEnvioAutomatico() {
+  if (controlador || !base.value) return
+  controlador = iniciarAutoEnvio({
+    temPendencias: () => pendentes.value.length > 0,
+    enviarLote,
+    aoMudarEstado: (estado) => {
+      envioEstado.value = estado
+    },
+    aoConcluir: aoConcluirEnvio,
+  })
 }
 
 async function descartar(rascunho: Rascunho) {
@@ -304,6 +394,11 @@ async function descartar(rascunho: Rascunho) {
   aviso.value = 'Rascunho descartado.'
   await atualizarPainel()
 }
+
+onBeforeUnmount(() => {
+  controlador?.parar()
+  controlador = null
+})
 
 async function reconfigurar() {
   if (!base.value || !workspace.value) return
@@ -383,6 +478,13 @@ async function reconfigurar() {
     </header>
 
     <main class="conteudo">
+      <FaixaEnvio
+        v-if="envioEstado !== 'ocioso'"
+        :estado="envioEstado"
+        :atual="envioAtual"
+        :total="envioTotal"
+      />
+
       <p v-if="erro" class="tela erro" role="alert">{{ erro }}</p>
       <p v-else-if="aviso" class="tela sucesso" aria-live="polite">{{ aviso }}</p>
 
@@ -417,13 +519,15 @@ async function reconfigurar() {
         v-else-if="tela === 'fila'"
         :itens="pendentes"
         :enviando="enviando"
+        :pode-enviar="online"
         :nome-do-formulario="nomeDoFormulario"
-        @enviar="enviarPendentes"
+        @enviar="controlador?.enviarAgora()"
       />
 
       <TelaEnviados
         v-else-if="tela === 'enviados'"
         :itens="enviados"
+        :tentativas="enviosLog"
         :nome-do-formulario="nomeDoFormulario"
       />
     </main>
