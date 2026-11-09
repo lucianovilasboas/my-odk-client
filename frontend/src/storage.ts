@@ -5,7 +5,7 @@
  * expõe rascunhos, pacotes ou fila do anterior.
  */
 
-const VERSAO = 1
+const VERSAO = 2
 
 export interface Formulario {
   xmlFormId: string
@@ -40,6 +40,13 @@ export interface ItemFila {
   tentativas: number
   ultimoErro?: string
   atualizadoEm: number
+}
+
+export interface Escopo {
+  host: string
+  projectId: string
+  projectName: string
+  salvoEm: number
 }
 
 export type Base = ReturnType<typeof abrirBase>
@@ -77,12 +84,25 @@ export function abrirBase(workspaceId: string) {
       if (!db.objectStoreNames.contains('pacotes')) db.createObjectStore('pacotes', { keyPath: 'xmlFormId' })
       if (!db.objectStoreNames.contains('rascunhos')) db.createObjectStore('rascunhos', { keyPath: 'localId' })
       if (!db.objectStoreNames.contains('fila')) db.createObjectStore('fila', { keyPath: 'localId' })
+      if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta')
     }
     requisicao.onsuccess = () => resolve(requisicao.result)
     requisicao.onerror = () => reject(requisicao.error)
   })
 
   return {
+    async salvarEscopo(escopo: Escopo): Promise<void> {
+      const db = await pronto
+      await transacao(db, ['meta'], 'readwrite', (tx) => {
+        tx.objectStore('meta').put(escopo, 'escopo')
+      })
+    },
+
+    async lerEscopo(): Promise<Escopo | undefined> {
+      const db = await pronto
+      return pedir(db.transaction('meta').objectStore('meta').get('escopo'))
+    },
+
     async listarFormularios(): Promise<Formulario[]> {
       const db = await pronto
       return pedir(db.transaction('formularios').objectStore('formularios').getAll())

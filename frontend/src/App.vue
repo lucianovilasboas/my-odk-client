@@ -52,6 +52,11 @@ const fila = ref<ItemFila[]>([])
 const rascunhos = ref<Rascunho[]>([])
 const enviando = ref(false)
 
+/** Sem rede, "Atualizar" só pode falhar; evitamos o erro previsível. */
+const online = ref(navigator.onLine)
+window.addEventListener('online', () => (online.value = true))
+window.addEventListener('offline', () => (online.value = false))
+
 const preenchendo = ref<{ xmlFormId: string; localId?: string } | null>(null)
 
 const pendentes = computed(() => fila.value.filter((i) => i.estado !== 'confirmado'))
@@ -90,6 +95,19 @@ async function carregarBase(id: string) {
   definirWorkspace(id)
   base.value = abrirBase(id)
   await atualizarPainel()
+
+  // O escopo vem do servidor quando há rede; offline, o último salvo identifica
+  // o projeto no cabeçalho.
+  const salvo = await base.value.lerEscopo()
+  if (salvo) {
+    host.value = salvo.host
+    projetoId.value = salvo.projectId
+    projeto.value = salvo.projectName
+  }
+}
+
+async function definirFormularios(lista: Formulario[]) {
+  formularios.value = lista
   await marcarDisponiveis()
 }
 
@@ -121,9 +139,12 @@ onMounted(async () => {
   try {
     const sessao = await api.sessao()
     await aplicarSessao(sessao.scope)
+    await salvarEscopo()
     await sincronizar()
   } catch {
-    formularios.value = await base.value!.listarFormularios()
+    // Offline: a verdade sobre o que dá para preencher são os pacotes locais,
+    // não a resposta do servidor.
+    await definirFormularios(await base.value!.listarFormularios())
     aviso.value = 'Sem conexão com o servidor. Os formulários baixados continuam disponíveis.'
   }
 
@@ -137,6 +158,7 @@ async function conectar(qr: string) {
     const sessao = await api.conectar(qr)
     await aplicarSessao(sessao.scope)
     await carregarBase(sessao.workspaceId)
+    await salvarEscopo()
     tela.value = 'projeto'
     somSucesso()
     await sincronizar()
@@ -148,6 +170,16 @@ async function conectar(qr: string) {
   }
 }
 
+async function salvarEscopo() {
+  if (!base.value || !host.value || !projetoId.value) return
+  await base.value.salvarEscopo({
+    host: host.value,
+    projectId: projetoId.value,
+    projectName: projeto.value ?? `Projeto ${projetoId.value}`,
+    salvoEm: Date.now(),
+  })
+}
+
 async function sincronizar() {
   if (!base.value || sincronizando.value) return
   sincronizando.value = true
@@ -156,7 +188,7 @@ async function sincronizar() {
 
   try {
     const { forms } = await api.formularios()
-    formularios.value = forms
+    await definirFormularios(forms)
     await base.value.salvarFormularios(forms)
 
     let baixados = 0
@@ -187,9 +219,9 @@ async function sincronizar() {
         })
         baixados += 1
       }
-      disponiveis.add(formulario.xmlFormId)
     }
 
+    await marcarDisponiveis()
     ultimaSync.value = Date.now()
     if (baixados) {
       aviso.value = `${baixados} formulário(s) atualizado(s).`
@@ -198,7 +230,7 @@ async function sincronizar() {
     }
   } catch (e) {
     erro.value = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)
-    formularios.value = await base.value.listarFormularios()
+    await definirFormularios(await base.value.listarFormularios())
   } finally {
     sincronizando.value = false
     sincronizacaoTexto.value = ''
@@ -334,7 +366,8 @@ async function reconfigurar() {
         <button
           v-if="mostrarAtualizar"
           class="atualizar"
-          :disabled="sincronizando"
+          :disabled="sincronizando || !online"
+          :title="online ? 'Buscar formulários e dados novos' : 'Sem conexão'"
           @click="sincronizar"
         >
           {{ sincronizando ? 'Atualizando…' : 'Atualizar' }}

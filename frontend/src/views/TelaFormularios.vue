@@ -18,7 +18,7 @@ defineEmits<{ (e: 'preencher', xmlFormId: string): void }>()
         <p class="texto-secundario meta">
           versão {{ f.version || '—' }}
           <span v-if="disponiveis.has(f.xmlFormId)" class="sucesso">· no aparelho</span>
-          <span v-else class="erro">· indisponível offline</span>
+          <span v-else class="erro">· não baixado</span>
         </p>
         <BotaoPilula
           variante="primario"

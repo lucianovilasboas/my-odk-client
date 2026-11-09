@@ -30,18 +30,42 @@ export class ApiError extends Error {
   }
 }
 
-async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
-  const resposta = await fetch(caminho, { credentials: 'same-origin', ...init })
-  if (resposta.status === 204) return undefined as T
+const CURTO = 6000
+const LONGO = 60000
 
-  const tipo = resposta.headers.get('content-type') ?? ''
-  const corpo = tipo.includes('application/json') ? await resposta.json() : await resposta.text()
+/**
+ * `fetch` sem timeout pendura a abertura do app em captive portal — a rede
+ * "existe" mas não responde. Abortamos e tratamos como falha recuperável.
+ */
+async function pedir<T>(caminho: string, init?: RequestInit, timeoutMs = CURTO): Promise<T> {
+  const controle = new AbortController()
+  const relogio = setTimeout(() => controle.abort(), timeoutMs)
 
-  if (!resposta.ok) {
-    const dados = typeof corpo === 'object' && corpo ? corpo : { code: 'UNKNOWN', message: String(corpo) }
-    throw new ApiError(dados.code ?? 'UNKNOWN', dados.message ?? 'falha', resposta.status, Boolean(dados.retryable))
+  try {
+    const resposta = await fetch(caminho, {
+      credentials: 'same-origin',
+      signal: controle.signal,
+      ...init,
+    })
+    if (resposta.status === 204) return undefined as T
+
+    const tipo = resposta.headers.get('content-type') ?? ''
+    const corpo = tipo.includes('application/json') ? await resposta.json() : await resposta.text()
+
+    if (!resposta.ok) {
+      const dados = typeof corpo === 'object' && corpo ? corpo : { code: 'UNKNOWN', message: String(corpo) }
+      throw new ApiError(dados.code ?? 'UNKNOWN', dados.message ?? 'falha', resposta.status, Boolean(dados.retryable))
+    }
+    return corpo as T
+  } catch (e) {
+    if (e instanceof ApiError) throw e
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new ApiError('REMOTE_UNAVAILABLE', 'o servidor não respondeu a tempo', 0, true)
+    }
+    throw new ApiError('OFFLINE', 'sem conexão com o servidor', 0, true)
+  } finally {
+    clearTimeout(relogio)
   }
-  return corpo as T
 }
 
 export const api = {
@@ -61,14 +85,20 @@ export const api = {
   pacote: (xmlFormId: string) => pedir<Pacote>(`/api/v1/forms/${encodeURIComponent(xmlFormId)}/package`),
 
   recurso: async (url: string) => {
-    const resposta = await fetch(url, { credentials: 'same-origin' })
-    if (!resposta.ok) throw new ApiError('RESOURCE_MISSING', 'recurso indisponível', resposta.status)
-    return new Uint8Array(await resposta.arrayBuffer())
+    const controle = new AbortController()
+    const relogio = setTimeout(() => controle.abort(), LONGO)
+    try {
+      const resposta = await fetch(url, { credentials: 'same-origin', signal: controle.signal })
+      if (!resposta.ok) throw new ApiError('RESOURCE_MISSING', 'recurso indisponível', resposta.status)
+      return new Uint8Array(await resposta.arrayBuffer())
+    } finally {
+      clearTimeout(relogio)
+    }
   },
 
   enviar: async (xml: string) => {
     const dados = new FormData()
     dados.append('xml_submission_file', new Blob([xml], { type: 'text/xml' }), 'submission.xml')
-    return pedir<{ status: string }>('/api/v1/submissions', { method: 'POST', body: dados })
+    return pedir<{ status: string }>('/api/v1/submissions', { method: 'POST', body: dados }, LONGO)
   },
 }
