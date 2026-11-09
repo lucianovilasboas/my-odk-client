@@ -78,6 +78,10 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | Finalizar com rede | submissão enviada na hora, sem deixar rascunho |
 | Finalizar sem rede | item na fila, rascunho removido |
 | Atualizar com dataset alterado | detecta hash novo do anexo e rebaixa (1 formulário atualizado) |
+| Valor de campo não vaza para a pergunta seguinte | campo novo abre vazio |
+| Obrigatória sem resposta | bloqueia o avanço, com mensagem |
+| Desdobramento ("Qual município?" após "Outro") | aparece na **mesma** tela do campo pai |
+| Geopoint | capturou `-16.20000, -40.50000` com precisão de 12 m |
 
 ## 5. Conclusão do gate
 

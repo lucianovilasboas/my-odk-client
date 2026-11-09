@@ -8,11 +8,20 @@ import NodeView from '../components/NodeView.vue'
 /**
  * Preenchimento com uma pergunta por tela, como no Collect.
  *
- * A lista de páginas é recalculada a cada alteração porque `relevant` esconde
- * perguntas conforme as respostas. A posição é reancorada pelo `nodeset` da
- * pergunta atual, não pelo número da página — senão a tela pula sozinha quando
- * a lista encolhe.
+ * Duas regras estruturam a navegação:
+ *
+ * 1. `relevant` esconde perguntas conforme as respostas — é o mecanismo do
+ *    XForms, não existe "pular" explícito.
+ * 2. Uma pergunta cuja relevância depende da pergunta imediatamente anterior é
+ *    mostrada na mesma tela, como os grupos `field-list` do Collect. É o caso
+ *    de "Qual município?" depois de escolher "outro".
  */
+
+interface Pagina {
+  no: any
+  extras: any[]
+  grupo: string
+}
 
 const props = defineProps<{ base: Base; xmlFormId: string; localId?: string }>()
 const emit = defineEmits<{ (e: 'voltar'): void; (e: 'finalizado', enviado: boolean): void }>()
@@ -42,9 +51,16 @@ function nodesetDe(no: any): string | null {
   return no?.definition?.nodeset ?? null
 }
 
-const paginas = computed<{ no: any; grupo: string }[]>(() => {
+/** Caminhos citados na expressão de relevância desta pergunta. */
+function dependencias(no: any): string[] {
+  const expressao = no?.definition?.bind?.relevant?.expression ?? ''
+  if (!expressao || expressao.trim() === 'true()') return []
+  return [...expressao.matchAll(/\/data\/[A-Za-z0-9_/-]+/g)].map((m) => m[0].trim())
+}
+
+const paginas = computed<Pagina[]>(() => {
   void versao.value
-  const lista: { no: any; grupo: string }[] = []
+  const visiveis: { no: any; grupo: string }[] = []
 
   const visitar = (no: any, grupo: string) => {
     if (!relevante(no)) return
@@ -57,20 +73,33 @@ const paginas = computed<{ no: any; grupo: string }[]>(() => {
     }
 
     if (tipo === 'input' || tipo === 'select' || tipo === 'note') {
-      lista.push({ no, grupo })
+      visiveis.push({ no, grupo })
     }
   }
 
   visitar(raiz.value, '')
+
+  const lista: Pagina[] = []
+  for (const item of visiveis) {
+    const anterior = lista[lista.length - 1]
+    const referencia = nodesetDe(anterior?.no)
+    if (anterior && referencia && dependencias(item.no).includes(referencia)) {
+      anterior.extras.push(item.no)
+      continue
+    }
+    lista.push({ no: item.no, extras: [], grupo: item.grupo })
+  }
   return lista
 })
 
 const total = computed(() => paginas.value.length)
-const atual = computed(() => paginas.value[indice.value] ?? null)
+const atual = computed<Pagina | null>(() => paginas.value[indice.value] ?? null)
 const ultima = computed(() => indice.value >= total.value - 1)
 const progresso = computed(() => (total.value ? ((indice.value + 1) / total.value) * 100 : 0))
 
-/** Reancora a posição pelo nó, mantendo o agente na mesma pergunta. */
+const nosDaPagina = computed<any[]>(() => (atual.value ? [atual.value.no, ...atual.value.extras] : []))
+
+/** Reancora a posição pelo nó, não pelo número — a lista muda de tamanho. */
 watch(paginas, (novas, antigas) => {
   const anterior = antigas?.[indice.value]
   const ns = nodesetDe(anterior?.no)
@@ -83,32 +112,30 @@ watch(paginas, (novas, antigas) => {
     novoIndice >= 0 ? novoIndice : Math.min(indice.value, Math.max(0, novas.length - 1))
 })
 
-function invalido(no: any): boolean {
-  const estado = no?.currentState
-  if (!estado) return false
-  if (estado.validationState?.violation) return true
-  return false
-}
-
 function vazio(no: any): boolean {
-  const tipo = tipoDe(no)
-  if (tipo === 'note') return false
+  if (tipoDe(no) === 'note') return false
   const valor = no?.currentState?.value
   if (valor === null || valor === undefined || valor === '') return true
   return Array.isArray(valor) && valor.length === 0
 }
 
+function campoInvalido(no: any): boolean {
+  if (tipoDe(no) === 'note') return false
+  const estado = no?.currentState
+  if (!estado) return false
+  if (estado.required && vazio(no)) return true
+  return Boolean(estado.validationState?.violation)
+}
+
+function paginaInvalida(pagina: Pagina | null): boolean {
+  if (!pagina) return false
+  return [pagina.no, ...pagina.extras].some(campoInvalido)
+}
+
 async function aoAlterar(imediato = true) {
   if (imediato) {
-    const proximoAntes = nodesetDe(paginas.value[indice.value + 1]?.no)
     versao.value += 1
     await nextTick()
-    const proximoDepois = nodesetDe(paginas.value[indice.value + 1]?.no)
-    // Se a resposta tornou a próxima pergunta irrelevante, segue para a
-    // próxima que ainda existe — é o "pular para o fim" do Collect.
-    if (proximoAntes && proximoDepois !== proximoAntes) {
-      indice.value = Math.min(indice.value + 1, Math.max(0, paginas.value.length - 1))
-    }
   } else {
     // Texto: adia o recálculo para não interromper a digitação.
     setTimeout(() => {
@@ -148,8 +175,8 @@ async function salvar() {
 
 function avancar() {
   erro.value = null
-  if (atual.value && invalido(atual.value.no)) {
-    erro.value = 'Responda esta pergunta para continuar.'
+  if (paginaInvalida(atual.value)) {
+    erro.value = 'Responda as perguntas obrigatórias desta tela para continuar.'
     return
   }
   if (indice.value < total.value - 1) indice.value += 1
@@ -162,7 +189,8 @@ function voltarPagina() {
 
 async function finalizar() {
   erro.value = null
-  const pendente = paginas.value.findIndex((p) => invalido(p.no))
+
+  const pendente = paginas.value.findIndex((p) => paginaInvalida(p))
   if (pendente >= 0) {
     indice.value = pendente
     erro.value = 'Ainda há perguntas obrigatórias sem resposta.'
@@ -174,7 +202,7 @@ async function finalizar() {
 
   try {
     const xml = await serializar(raiz.value)
-    const emBranco = paginas.value.filter((p) => vazio(p.no)).length
+    const emBranco = paginas.value.flatMap((p) => [p.no, ...p.extras]).filter(vazio).length
     if (emBranco > 0) {
       const confirmar = window.confirm(
         `Há ${emBranco} pergunta(s) sem resposta. Finalizar mesmo assim?`,
@@ -310,7 +338,13 @@ onBeforeUnmount(() => {
 
     <div v-if="raiz && atual" class="pergunta">
       <p class="grupo">{{ atual.grupo }}</p>
-      <NodeView :no="atual.no" :versao="versao" @alterou="aoAlterar" />
+      <NodeView
+        v-for="no in nosDaPagina"
+        :key="no.nodeId"
+        :no="no"
+        :versao="versao"
+        @alterou="aoAlterar"
+      />
     </div>
     <p v-else-if="raiz" class="aviso">Não há perguntas visíveis neste ponto do formulário.</p>
 
