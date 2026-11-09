@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import SelecaoBusca from './SelecaoBusca.vue'
+import { usaCombobox, type MapaAparencias } from '../aparencias'
 
 /**
  * Renderizador mínimo do corpus: grupos, notas, texto, inteiro, geopoint e
@@ -14,8 +16,11 @@ import { computed, ref, watch } from 'vue'
  * aparecer no próximo.
  */
 
-const props = defineProps<{ no: any; versao: number }>()
-const emit = defineEmits<{ (e: 'alterou', imediato: boolean): void }>()
+const props = withDefaults(
+  defineProps<{ no: any; versao: number; aparencias?: MapaAparencias }>(),
+  { aparencias: () => new Map() },
+)
+const emit = defineEmits<{ (e: 'alterou', imediato: boolean): void; (e: 'avancar'): void }>()
 
 const tipo = computed(() => props.no?.nodeType as string)
 const tipoValor = computed(() => props.no?.valueType as string)
@@ -38,6 +43,17 @@ const valor = computed<string[]>(() => {
 })
 
 const filhos = computed<any[]>(() => estado.value?.children ?? [])
+
+/** Lista longa ou `autocomplete` no XLSForm vira combobox com busca. */
+const usarBusca = computed(() => {
+  void props.versao
+  if (tipo.value !== 'select' || props.no?.selectType !== 'select1') return false
+  return usaCombobox(
+    props.aparencias,
+    props.no?.definition?.nodeset ?? null,
+    opcoes.value.length,
+  )
+})
 
 const campo = ref<HTMLInputElement | null>(null)
 const valorLocal = ref('')
@@ -143,7 +159,9 @@ function limparLocalizacao() {
         :key="filho.nodeId"
         :no="filho"
         :versao="versao"
+        :aparencias="aparencias"
         @alterou="(imediato: boolean) => emit('alterou', imediato)"
+        @avancar="emit('avancar')"
       />
     </div>
 
@@ -175,14 +193,25 @@ function limparLocalizacao() {
         :type="tipoValor === 'int' || tipoValor === 'decimal' ? 'number' : 'text'"
         :inputmode="tipoValor === 'int' ? 'numeric' : undefined"
         autocomplete="off"
+        enterkeyhint="next"
         :value="valorLocal"
         @input="digitar"
         @blur="sairDoCampo"
+        @keydown.enter.prevent="emit('avancar')"
       />
       <small v-if="estado?.validationState?.violation" class="erro">
         Resposta obrigatória ou inválida
       </small>
     </div>
+
+    <SelecaoBusca
+      v-else-if="tipo === 'select' && usarBusca"
+      :no="no"
+      :versao="versao"
+      :rotulo="rotulo"
+      :obrigatorio="Boolean(estado?.required)"
+      @alterou="(imediato: boolean) => emit('alterou', imediato)"
+    />
 
     <div v-else-if="tipo === 'select'" class="campo">
       <span class="rotulo">

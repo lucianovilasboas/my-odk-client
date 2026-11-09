@@ -86,6 +86,11 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | Finalizar (offline e online) | zero rascunhos; só o item de fila |
 | Descartar rascunho | removido do IndexedDB, com confirmação prévia |
 | Sons do leitor | 2 tons no erro de conexão e 2 no sucesso, contados no `AudioContext` |
+| Combobox em lista longa | 102 pessoas → 50 visíveis + "Mostrando 50 de 102" |
+| Combobox por `appearance=autocomplete` | agente com 3 opções também virou busca |
+| Filtro sem acento | "Rosi" encontrou "Rosineia Maria dos Santos" |
+| Botões no topo | telas de texto e de busca; rodapé nas telas de seleção curta |
+| Enter no campo de texto | avança e recolhe o teclado |
 
 ## 5. Conclusão do gate
 
