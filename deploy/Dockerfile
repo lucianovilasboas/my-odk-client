@@ -2,6 +2,8 @@
 
 # 1) build da PWA
 FROM node:22-alpine AS web
+ARG VITE_APP_VERSION=dev
+ENV VITE_APP_VERSION=$VITE_APP_VERSION
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci

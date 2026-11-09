@@ -13,6 +13,8 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile
+      args:
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-dev}
     image: ${IMAGE:-my-odk-client:latest}
     container_name: my-odk-client
     restart: unless-stopped

@@ -31,6 +31,7 @@ quando houver conexão e sessão válida.
 | Descartar rascunho, com confirmação | ✅ |
 | Hub com Rascunhos, Pronto para enviar e Enviado | ✅ |
 | Tema claro/escuro seguindo o sistema | ✅ |
+| Versão visível no rodapé, vinda da tag do build | ✅ |
 | Finalizar e enfileirar | ✅ |
 | Finalizar envia na hora se houver rede; senão enfileira | ✅ |
 | Enviar e confirmar no Central | ✅ |
