@@ -15,6 +15,7 @@ quando houver conexão e sessão válida.
 |---|---|
 | Configuração por QR do App User (câmera ou colar) | ✅ |
 | Som e vibração ao ler o QR e ao conectar | ✅ |
+| Bipe de 2,2 kHz com limitador, audível a distância | ✅ |
 | Projeto e formulário vêm do QR, como no Collect | ✅ |
 | Sessão em cookie cifrado; token nunca no navegador | ✅ |
 | Baixar formulários automaticamente ao conectar | ✅ |
@@ -28,6 +29,8 @@ quando houver conexão e sessão válida.
 | Geopoint com captura de GPS do aparelho | ✅ |
 | Autosave e retomada no mesmo ponto do rascunho | ✅ |
 | Descartar rascunho, com confirmação | ✅ |
+| Hub com Rascunhos, Pronto para enviar e Enviado | ✅ |
+| Tema claro/escuro seguindo o sistema | ✅ |
 | Finalizar e enfileirar | ✅ |
 | Finalizar envia na hora se houver rede; senão enfileira | ✅ |
 | Enviar e confirmar no Central | ✅ |

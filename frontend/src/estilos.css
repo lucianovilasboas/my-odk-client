@@ -1,0 +1,115 @@
+/* Design tokens e base. Tema segue o sistema; as duas paletas passam AA. */
+
+:root {
+  color-scheme: light dark;
+
+  --fundo: #f4f7f9;
+  --superficie: #ffffff;
+  --superficie-2: #e8eef3;
+  --cartao: #ffffff;
+  --acento: #0f6e9c;
+  --texto-acento: #ffffff;
+  --texto: #101b26;
+  --texto-2: #4a5b68;
+  --divisor: #dce4ea;
+  --erro: #a3231a;
+  --sucesso: #2c7a5a;
+  --alerta: #d9483b;
+  --sombra: 0 1px 2px rgba(16, 27, 38, 0.08);
+
+  --raio-pilula: 999px;
+  --raio-cartao: 16px;
+  --altura-pilula: 64px;
+  --espaco: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #0b1622;
+    --superficie: #232a33;
+    --superficie-2: #1a222c;
+    --cartao: #131c26;
+    --acento: #5cb6ea;
+    --texto-acento: #06202f;
+    --texto: #e9eef3;
+    --texto-2: #9fb0bf;
+    --divisor: #1e2a36;
+    --erro: #ff9a8c;
+    --sucesso: #6fd3a8;
+    --alerta: #e2564a;
+    --sombra: none;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 400;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.texto-secundario {
+  color: var(--texto-2);
+}
+
+.erro {
+  color: var(--erro);
+}
+
+.sucesso {
+  color: var(--sucesso);
+}
+
+/* Tela base: conteúdo centralizado com largura confortável no desktop. */
+.tela {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--espaco);
+  padding-bottom: calc(var(--espaco) + 72px);
+}
+
+.pilha {
+  display: grid;
+  gap: 12px;
+}
+
+/* Foco visível e consistente nos dois temas. */
+:focus-visible {
+  outline: 3px solid var(--acento);
+  outline-offset: 2px;
+}

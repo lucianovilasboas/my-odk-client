@@ -9,6 +9,7 @@
 type TipoOnda = OscillatorType
 
 let contexto: AudioContext | null = null
+let limitador: DynamicsCompressorNode | null = null
 
 function obterContexto(): AudioContext | null {
   const Ctor =
@@ -16,7 +17,18 @@ function obterContexto(): AudioContext | null {
     (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
   if (!Ctor) return null
 
-  if (!contexto) contexto = new Ctor()
+  if (!contexto) {
+    contexto = new Ctor()
+    // Limitador evita estouro quando dois tons tocam juntos e permite
+    // trabalhar com ganho alto.
+    limitador = contexto.createDynamicsCompressor()
+    limitador.threshold.value = -10
+    limitador.knee.value = 6
+    limitador.ratio.value = 12
+    limitador.attack.value = 0.003
+    limitador.release.value = 0.15
+    limitador.connect(contexto.destination)
+  }
   if (contexto.state === 'suspended') void contexto.resume()
   return contexto
 }
@@ -24,7 +36,7 @@ function obterContexto(): AudioContext | null {
 function tom(
   frequencia: number,
   duracao: number,
-  { tipo = 'sine' as TipoOnda, atraso = 0, volume = 0.16 } = {},
+  { tipo = 'sine' as TipoOnda, atraso = 0, volume = 0.55 } = {},
 ) {
   const audio = obterContexto()
   if (!audio) return
@@ -41,15 +53,17 @@ function tom(
   ganho.gain.linearRampToValueAtTime(volume, inicio + 0.01)
   ganho.gain.exponentialRampToValueAtTime(0.0001, inicio + duracao)
 
-  oscilador.connect(ganho).connect(audio.destination)
+  oscilador.connect(ganho).connect(limitador ?? audio.destination)
   oscilador.start(inicio)
   oscilador.stop(inicio + duracao + 0.02)
 }
 
 /** Código lido: bipe curto e agudo, como leitor de código de barras. */
 export function somLeitura() {
-  tom(880, 0.09)
-  vibrar(25)
+  // 2.2 kHz fica na faixa em que alto-falantes pequenos rendem mais.
+  tom(2200, 0.12, { tipo: 'triangle', volume: 0.6 })
+  tom(1650, 0.08, { tipo: 'triangle', atraso: 0.01, volume: 0.25 })
+  vibrar(30)
 }
 
 /** Credencial aceita e sessão criada. */

@@ -243,22 +243,30 @@ export default { name: 'NodeView' }
 </script>
 
 <style scoped>
-.grupo { border-left: 3px solid #e3e7e6; padding-left: 12px; margin: 12px 0; }
-.grupo-rotulo { font-weight: 600; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; color: #4a5b58; }
-.campo { display: grid; gap: 6px; margin: 14px 0; }
+.grupo { border-left: 3px solid var(--divisor); padding-left: 14px; margin: 16px 0; }
+.grupo-rotulo { font-weight: 600; text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.05em; color: var(--texto-2); }
+.campo { display: grid; gap: 8px; margin: 18px 0; }
 .campo label, .rotulo { font-weight: 500; }
 .campo input[type='text'], .campo input[type='number'] {
-  min-height: 44px; border: 1px solid #c9cfce; border-radius: 8px; padding: 0 10px; font-size: 1rem; width: 100%;
+  min-height: 52px; border: 1px solid var(--divisor); border-radius: 12px; padding: 0 14px;
+  font-size: 1.05rem; width: 100%; background: var(--superficie); color: var(--texto);
 }
-.opcao { display: flex; align-items: center; gap: 10px; min-height: 44px; }
-.opcao input { width: 22px; height: 22px; }
-.nota { background: #eef4f3; border-radius: 8px; padding: 12px; color: #3d4d4a; }
+.opcao {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 14px;
+  border-radius: 12px; background: var(--superficie); box-shadow: var(--sombra);
+}
+.opcao input { width: 22px; height: 22px; accent-color: var(--acento); }
+.nota { background: var(--superficie-2); border-radius: 12px; padding: 16px; color: var(--texto); }
 .oculto { display: none; }
-.erro { color: #a3231a; font-size: 0.85rem; }
-.obrigatorio { color: #a3231a; }
-.aviso-tipo { background: #fff4e0; border-radius: 8px; padding: 10px; color: #7a4d00; font-size: 0.9rem; }
+.erro { color: var(--erro); font-size: 0.85rem; }
+.obrigatorio { color: var(--erro); }
+.aviso-tipo { background: var(--superficie-2); border-radius: 12px; padding: 14px; color: var(--texto); font-size: 0.9rem; }
 .coordenadas { margin: 0; font-variant-numeric: tabular-nums; }
-.sem-localizacao { margin: 0; color: #4a5b58; font-size: 0.9rem; }
-.acoes-gps { display: flex; gap: 8px; flex-wrap: wrap; }
-.secundario { background: transparent; border-color: #c9cfce; }
+.sem-localizacao { margin: 0; color: var(--texto-2); font-size: 0.9rem; }
+.acoes-gps { display: flex; gap: 10px; flex-wrap: wrap; }
+.acoes-gps button {
+  min-height: 48px; padding: 0 18px; border-radius: 999px;
+  border: 1px solid var(--divisor); background: var(--superficie); color: var(--texto);
+}
+.secundario { background: transparent; }
 </style>

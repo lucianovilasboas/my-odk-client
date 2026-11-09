@@ -91,6 +91,10 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | Filtro sem acento | "Rosi" encontrou "Rosineia Maria dos Santos" |
 | Botões no topo | telas de texto e de busca; rodapé nas telas de seleção curta |
 | Enter no campo de texto | avança e recolhe o teclado |
+| Contraste no tema escuro | texto/fundo 15,6:1 · texto sobre acento 7,4:1 · secundário 8,2:1 |
+| Contraste no tema claro | 16,2:1 · 5,6:1 · 6,5:1 (todos acima de AA) |
+| Hub do projeto | 5 pílulas: preencher, rascunhos, fila, enviados, reconfigurar |
+| Som do leitor | 2.200 Hz no bipe; sucesso 740→1.100 Hz |
 
 ## 5. Conclusão do gate
 
