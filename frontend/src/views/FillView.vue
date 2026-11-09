@@ -4,6 +4,7 @@ import { api, ApiError } from '../api'
 import { carregar, restaurar, serializar } from '../engine'
 import type { Base } from '../storage'
 import NodeView from '../components/NodeView.vue'
+import Icone from '../components/Icone.vue'
 import { lerAparencias, precisaEscrita, type MapaAparencias } from '../aparencias'
 
 /**
@@ -360,7 +361,7 @@ onBeforeUnmount(() => {
 <template>
   <section class="coleta">
     <div class="topo">
-      <button class="voltar" @click="emit('voltar')" aria-label="Voltar para a lista">←</button>
+      <button class="voltar" @click="emit('voltar')" aria-label="Voltar para o projeto"><Icone nome="voltar" /></button>
       <div
         class="progresso"
         role="progressbar"
@@ -416,34 +417,63 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.coleta { display: grid; gap: 12px; padding-bottom: 96px; }
-.topo { display: flex; align-items: center; gap: 10px; }
-.voltar { min-width: 44px; padding: 0; }
-.progresso { flex: 1; height: 8px; background: #e3e7e6; border-radius: 999px; overflow: hidden; }
-.barra { height: 100%; background: var(--teal); transition: width 0.2s ease; }
-.contagem { font-size: 0.8rem; color: #4a5b58; white-space: nowrap; }
-.salvamento { margin: 0; font-size: 0.8rem; color: #4a5b58; }
-.grupo { text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.75rem; color: #4a5b58; margin: 0 0 8px; }
+.coleta {
+  min-height: 100vh;
+  min-height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 96px;
+  display: grid;
+  gap: 14px;
+}
+.topo { display: flex; align-items: center; gap: 12px; }
+.voltar {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+  padding: 0;
+}
+.progresso { flex: 1; height: 8px; background: var(--divisor); border-radius: 999px; overflow: hidden; }
+.barra { height: 100%; background: var(--acento); transition: width 0.2s ease; }
+.contagem { font-size: 0.8rem; color: var(--texto-2); white-space: nowrap; }
+.salvamento { margin: 0; font-size: 0.8rem; color: var(--texto-2); }
+.grupo { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.75rem; color: var(--texto-2); margin: 0 0 10px; }
 .pergunta { min-height: 40vh; }
-.aviso { color: #4a5b58; }
+.aviso { color: var(--texto-2); }
 .rodape {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  display: flex; gap: 8px;
+  display: flex; gap: 10px;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  background: #fff;
-  border-top: 1px solid #e3e7e6;
+  background: var(--fundo);
+  border-top: 1px solid var(--divisor);
 }
-.rodape button { flex: 1; }
+.rodape button {
+  flex: 1;
+  min-height: 56px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 1rem;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+.rodape button.primario { background: var(--acento); color: var(--texto-acento); }
 .rodape-topo {
   position: sticky;
   top: 0;
   z-index: 10;
   bottom: auto;
-  padding: 8px 0;
+  padding: 10px 0;
   border-top: 0;
-  border-bottom: 1px solid #e3e7e6;
-  background: #f5f6f6;
+  border-bottom: 1px solid var(--divisor);
+  background: var(--fundo);
 }
-.erro { color: #a3231a; margin: 0; }
+.erro { color: var(--erro); margin: 0; }
 </style>

@@ -156,16 +156,17 @@ const textoExibido = computed(() => (aberto.value ? busca.value : (selecionado.v
 </template>
 
 <style scoped>
-.busca { display: grid; gap: 6px; margin: 14px 0; position: relative; }
+.busca { display: grid; gap: 8px; margin: 18px 0; position: relative; }
 label { font-weight: 500; }
 input {
-  min-height: 44px;
-  border: 1px solid #c9cfce;
-  border-radius: 8px;
-  padding: 0 10px;
-  font-size: 1rem;
+  min-height: 52px;
+  border: 1px solid var(--divisor);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 1.05rem;
   width: 100%;
-  background: #fff;
+  background: var(--superficie);
+  color: var(--texto);
 }
 .lista {
   list-style: none;
@@ -173,13 +174,13 @@ input {
   padding: 0;
   max-height: 46vh;
   overflow-y: auto;
-  border: 1px solid #c9cfce;
-  border-radius: 8px;
-  background: #fff;
+  border: 1px solid var(--divisor);
+  border-radius: 12px;
+  background: var(--superficie);
 }
-.lista li { padding: 12px; min-height: 44px; border-bottom: 1px solid #eef1f0; }
+.lista li { padding: 14px; min-height: 48px; border-bottom: 1px solid var(--divisor); }
 .lista li:last-child { border-bottom: 0; }
-.lista li.destaque { background: #e6efee; }
-.lista li.vazio { color: #4a5b58; font-size: 0.85rem; }
-.obrigatorio { color: #a3231a; }
+.lista li.destaque { background: var(--superficie-2); }
+.lista li.vazio { color: var(--texto-2); font-size: 0.85rem; }
+.obrigatorio { color: var(--erro); }
 </style>
