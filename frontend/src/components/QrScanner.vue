@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import jsQR from 'jsqr'
+import { prepararAudio, somErro, somLeitura } from '../som'
 
 /**
  * Leitor de QR em tela cheia.
@@ -31,6 +32,7 @@ function fechar() {
 }
 
 onMounted(async () => {
+  prepararAudio()
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' } },
@@ -44,6 +46,7 @@ onMounted(async () => {
     erro.value =
       'Não foi possível abrir a câmera. Verifique a permissão ou use o campo para colar o conteúdo do QR.'
     lendo.value = false
+    somErro()
   }
 })
 
@@ -57,6 +60,7 @@ async function laco() {
     const texto = await decodificar(elemento)
     if (texto) {
       lendo.value = false
+      somLeitura()
       encerrarCamera()
       emit('ler', texto)
       return

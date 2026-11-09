@@ -82,6 +82,10 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | Obrigatória sem resposta | bloqueia o avanço, com mensagem |
 | Desdobramento ("Qual município?" após "Outro") | aparece na **mesma** tela do campo pai |
 | Geopoint | capturou `-16.20000, -40.50000` com precisão de 12 m |
+| Abrir formulário e sair sem alterar | nenhum rascunho criado |
+| Finalizar (offline e online) | zero rascunhos; só o item de fila |
+| Descartar rascunho | removido do IndexedDB, com confirmação prévia |
+| Sons do leitor | 2 tons no erro de conexão e 2 no sucesso, contados no `AudioContext` |
 
 ## 5. Conclusão do gate
 

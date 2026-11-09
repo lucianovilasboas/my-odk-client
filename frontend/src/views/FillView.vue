@@ -36,6 +36,10 @@ const instanceID = ref('')
 const localId = ref(props.localId ?? crypto.randomUUID())
 const revisao = ref(0)
 const enviando = ref(false)
+/** Já foi finalizado: o desmonte não pode recriar o rascunho apagado. */
+const encerrado = ref(false)
+/** Só grava rascunho depois da primeira alteração real do agente. */
+const alterado = ref(false)
 
 let temporizador: ReturnType<typeof setTimeout> | null = null
 
@@ -133,6 +137,7 @@ function paginaInvalida(pagina: Pagina | null): boolean {
 }
 
 async function aoAlterar(imediato = true) {
+  alterado.value = true
   if (imediato) {
     versao.value += 1
     await nextTick()
@@ -151,7 +156,7 @@ function agendarSalvamento() {
 }
 
 async function salvar() {
-  if (!raiz.value) return
+  if (!raiz.value || encerrado.value || !alterado.value) return
   salvando.value = true
   try {
     const xml = await serializar(raiz.value)
@@ -199,6 +204,11 @@ async function finalizar() {
 
   if (!raiz.value) return
   enviando.value = true
+  encerrado.value = true
+  if (temporizador) {
+    clearTimeout(temporizador)
+    temporizador = null
+  }
 
   try {
     const xml = await serializar(raiz.value)
@@ -214,6 +224,7 @@ async function finalizar() {
     }
 
     // Grava antes de qualquer rede: se o app morrer no envio, o dado existe.
+    // `enfileirar` já apaga o rascunho; reforçamos aqui por segurança.
     await props.base.enfileirar({
       localId: localId.value,
       xmlFormId: props.xmlFormId,
@@ -222,6 +233,7 @@ async function finalizar() {
       tentativas: 0,
       atualizadoEm: Date.now(),
     })
+    await props.base.apagarRascunho(localId.value)
 
     let enviado = false
     if (navigator.onLine) {
@@ -305,8 +317,9 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (temporizador) {
     clearTimeout(temporizador)
-    void salvar()
+    temporizador = null
   }
+  if (!encerrado.value) void salvar()
 })
 </script>
 
