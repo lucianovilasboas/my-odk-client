@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { api, ApiError, type Formulario } from './api'
 import {
   abrirBase,
@@ -20,9 +20,18 @@ const erro = ref<string | null>(null)
 const aviso = ref<string | null>(null)
 
 const conectando = ref(false)
+const sincronizando = ref(false)
+const sincronizacaoTexto = ref('')
+const ultimaSync = ref<number | null>(null)
+
 const workspace = ref<string | null>(null)
+const projeto = ref<string | null>(null)
+const projetoId = ref<string | null>(null)
+const host = ref<string | null>(null)
+
 const base = ref<Base | null>(null)
 const formularios = ref<Formulario[]>([])
+const disponiveis = reactive(new Set<string>())
 const fila = ref<ItemFila[]>([])
 const rascunhos = ref<Rascunho[]>([])
 const enviando = ref(false)
@@ -30,13 +39,33 @@ const mostrarSobre = ref(false)
 
 const preenchendo = ref<{ xmlFormId: string; localId?: string } | null>(null)
 
-const pendentes = computed(() => fila.value.filter((i) => i.estado !== 'confirmado').length)
+const pendentes = computed(() => fila.value.filter((i) => i.estado !== 'confirmado'))
+
+const horaSync = computed(() =>
+  ultimaSync.value ? new Date(ultimaSync.value).toLocaleTimeString('pt-BR') : null,
+)
+
+async function aplicarSessao(scope: { host: string; projectId: string; projectName?: string }) {
+  host.value = scope.host
+  projetoId.value = scope.projectId
+  projeto.value = scope.projectName || `Projeto ${scope.projectId}`
+}
 
 async function carregarBase(id: string) {
   workspace.value = id
   definirWorkspace(id)
   base.value = abrirBase(id)
   await atualizarPainel()
+  await marcarDisponiveis()
+}
+
+async function marcarDisponiveis() {
+  if (!base.value) return
+  disponiveis.clear()
+  for (const f of formularios.value) {
+    const pacote = await base.value.lerPacote(f.xmlFormId)
+    if (pacote) disponiveis.add(f.xmlFormId)
+  }
 }
 
 async function atualizarPainel() {
@@ -57,8 +86,9 @@ onMounted(async () => {
   await carregarBase(id)
 
   try {
-    await api.sessao()
-    await carregarFormularios()
+    const sessao = await api.sessao()
+    await aplicarSessao(sessao.scope)
+    await sincronizar()
   } catch {
     formularios.value = await base.value!.listarFormularios()
     aviso.value = 'Sem conexão com o servidor. Os formulários já baixados continuam disponíveis.'
@@ -72,9 +102,10 @@ async function conectar(qr: string) {
   conectando.value = true
   try {
     const sessao = await api.conectar(qr)
+    await aplicarSessao(sessao.scope)
     await carregarBase(sessao.workspaceId)
-    await carregarFormularios()
     tela.value = 'lista'
+    await sincronizar()
   } catch (e) {
     erro.value = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)
   } finally {
@@ -82,37 +113,67 @@ async function conectar(qr: string) {
   }
 }
 
-async function carregarFormularios() {
-  if (!base.value) return
+/**
+ * Baixa formulários e recursos. Só rebaixa o que mudou: o XML é comparado como
+ * texto e cada anexo pelo hash do manifesto — é assim que o dataset
+ * `pessoas_idosas.csv` é detectado quando a versão do formulário não muda.
+ */
+async function sincronizar() {
+  if (!base.value || sincronizando.value) return
+  sincronizando.value = true
+  erro.value = null
+  sincronizacaoTexto.value = 'Verificando formulários…'
+
   try {
     const { forms } = await api.formularios()
     formularios.value = forms
     await base.value.salvarFormularios(forms)
-  } catch {
-    formularios.value = await base.value.listarFormularios()
-    aviso.value = 'Sem conexão com o servidor. Mostrando os formulários já baixados.'
-  }
-}
 
-async function baixar(formulario: Formulario) {
-  if (!base.value) return
-  erro.value = null
-  aviso.value = null
-  try {
-    const pacote = await api.pacote(formulario.xmlFormId)
-    const recursos = []
-    for (const recurso of pacote.resources) {
-      recursos.push({ nome: recurso.filename, bytes: await api.recurso(recurso.url) })
+    let baixados = 0
+    for (const [i, formulario] of forms.entries()) {
+      sincronizacaoTexto.value = `Preparando ${i + 1} de ${forms.length}…`
+      const pacote = await api.pacote(formulario.xmlFormId)
+      const existente = await base.value.lerPacote(formulario.xmlFormId)
+
+      const recursos = []
+      for (const recurso of pacote.resources) {
+        const anterior = existente?.recursos.find((r) => r.nome === recurso.filename)
+        const bytes =
+          anterior && anterior.hash === recurso.hash
+            ? anterior.bytes
+            : await api.recurso(recurso.url)
+        recursos.push({ nome: recurso.filename, bytes, hash: recurso.hash })
+      }
+
+      const mudou =
+        !existente ||
+        existente.xml !== pacote.xml ||
+        recursos.some((r) => existente.recursos.find((a) => a.nome === r.nome)?.hash !== r.hash)
+
+      if (mudou) {
+        await base.value.salvarPacote({
+          xmlFormId: pacote.xmlFormId,
+          xml: pacote.xml,
+          recursos,
+          preparadoEm: Date.now(),
+        })
+        baixados += 1
+      }
+      disponiveis.add(formulario.xmlFormId)
     }
-    await base.value.salvarPacote({
-      xmlFormId: pacote.xmlFormId,
-      xml: pacote.xml,
-      recursos,
-      preparadoEm: Date.now(),
-    })
-    aviso.value = `${formulario.name} pronto para uso offline.`
+
+    ultimaSync.value = Date.now()
+    if (baixados) {
+      aviso.value = `${baixados} formulário(s) atualizado(s).`
+    } else if (pendentes.value.length) {
+      aviso.value = 'Nada novo no servidor. Envie os pendentes para que os cadastros apareçam na Parte 2.'
+    }
   } catch (e) {
     erro.value = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)
+    formularios.value = await base.value.listarFormularios()
+  } finally {
+    sincronizando.value = false
+    sincronizacaoTexto.value = ''
   }
 }
 
@@ -127,12 +188,18 @@ function voltar() {
   atualizarPainel()
 }
 
+function aoFinalizar(enviado: boolean) {
+  aviso.value = enviado
+    ? 'Enviado e aceito pelo servidor.'
+    : 'Salvo neste aparelho. Será enviado quando houver conexão.'
+  voltar()
+}
+
 async function enviarPendentes() {
   if (!base.value) return
   enviando.value = true
   erro.value = null
-  for (const item of fila.value) {
-    if (item.estado === 'confirmado') continue
+  for (const item of pendentes.value) {
     try {
       await api.enviar(item.xml)
       await base.value.atualizarItem({
@@ -154,6 +221,7 @@ async function enviarPendentes() {
     await atualizarPainel()
   }
   enviando.value = false
+  aviso.value = 'Envio concluído. Toque em Atualizar para trazer os cadastros novos.'
 }
 
 async function reconfigurar() {
@@ -178,6 +246,10 @@ async function reconfigurar() {
   formularios.value = []
   fila.value = []
   rascunhos.value = []
+  disponiveis.clear()
+  projeto.value = null
+  projetoId.value = null
+  host.value = null
   mostrarSobre.value = false
   erro.value = null
   tela.value = 'setup'
@@ -185,14 +257,28 @@ async function reconfigurar() {
 </script>
 
 <template>
-  <main class="app">
-    <header>
+  <header class="barra-app">
+    <div class="linha">
       <h1>My ODK Client</h1>
-      <span v-if="pendentes" class="badge">{{ pendentes }} pendente(s)</span>
-    </header>
+      <button
+        v-if="tela === 'lista'"
+        class="atualizar"
+        :disabled="sincronizando"
+        @click="sincronizar"
+      >
+        {{ sincronizando ? 'Atualizando…' : 'Atualizar' }}
+      </button>
+    </div>
+    <p v-if="projeto" class="projeto">{{ projeto }} · projeto {{ projetoId }}</p>
+    <p v-if="host" class="detalhe">
+      {{ host }}<span v-if="horaSync"> · atualizado {{ horaSync }}</span>
+    </p>
+    <p v-if="sincronizando && sincronizacaoTexto" class="detalhe">{{ sincronizacaoTexto }}</p>
+  </header>
 
+  <main class="app">
     <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
-    <p v-if="aviso" class="aviso">{{ aviso }}</p>
+    <p v-if="aviso" class="aviso" aria-live="polite">{{ aviso }}</p>
 
     <section v-if="tela === 'carregando'">Carregando…</section>
 
@@ -204,17 +290,24 @@ async function reconfigurar() {
     />
 
     <section v-else-if="tela === 'lista'">
-      <h2>Formulários</h2>
       <p v-if="!formularios.length" class="aviso">
-        Nenhum formulário baixado. Conecte-se e baixe pelo menos um para usar offline.
+        Nenhum formulário disponível. Toque em Atualizar quando tiver conexão.
       </p>
 
       <article v-for="f in formularios" :key="f.xmlFormId" class="cartao">
         <strong>{{ f.name }}</strong>
-        <small>versão {{ f.version || '—' }}</small>
+        <small>
+          versão {{ f.version || '—' }}
+          <span v-if="disponiveis.has(f.xmlFormId)" class="offline">· no aparelho</span>
+        </small>
         <div class="acoes">
-          <button @click="baixar(f)">Baixar</button>
-          <button class="primario" @click="iniciar(f.xmlFormId)">Preencher</button>
+          <button
+            class="primario"
+            :disabled="!disponiveis.has(f.xmlFormId)"
+            @click="iniciar(f.xmlFormId)"
+          >
+            Preencher
+          </button>
         </div>
       </article>
 
@@ -227,8 +320,8 @@ async function reconfigurar() {
         </div>
       </article>
 
-      <h2 v-if="fila.length">Aguardando envio</h2>
-      <article v-for="i in fila.filter((x) => x.estado !== 'confirmado')" :key="i.localId" class="cartao">
+      <h2 v-if="pendentes.length">Aguardando envio</h2>
+      <article v-for="i in pendentes" :key="i.localId" class="cartao">
         <strong>{{ i.xmlFormId }}</strong>
         <small>{{ i.estado }} · tentativas: {{ i.tentativas }}</small>
         <small v-if="i.ultimoErro" class="erro">{{ i.ultimoErro }}</small>
@@ -244,8 +337,8 @@ async function reconfigurar() {
       </details>
 
       <div class="acoes fixas">
-        <button class="primario" :disabled="!pendentes || enviando" @click="enviarPendentes">
-          {{ enviando ? 'Enviando…' : `Enviar pendentes (${pendentes})` }}
+        <button class="primario" :disabled="!pendentes.length || enviando" @click="enviarPendentes">
+          {{ enviando ? 'Enviando…' : `Enviar pendentes (${pendentes.length})` }}
         </button>
       </div>
     </section>
@@ -256,7 +349,7 @@ async function reconfigurar() {
       :xml-form-id="preenchendo.xmlFormId"
       :local-id="preenchendo.localId"
       @voltar="voltar"
-      @finalizado="voltar"
+      @finalizado="aoFinalizar"
     />
   </main>
 </template>
@@ -272,11 +365,28 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   background: #f5f6f6;
   color: #12211f;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.barra-app {
+  background: var(--teal);
+  color: #fff;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+}
+.barra-app .linha { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.barra-app h1 { font-size: 1.1rem; margin: 0; font-weight: 600; }
+.barra-app .projeto { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.95; }
+.barra-app .detalhe { margin: 2px 0 0; font-size: 0.75rem; opacity: 0.72; }
+.barra-app .atualizar {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 .app { max-width: 720px; margin: 0 auto; padding: 16px 16px 96px; }
-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-h1 { font-size: 1.2rem; }
 h2 { font-size: 1rem; margin-top: 24px; }
 button {
   min-height: 44px;
@@ -298,7 +408,7 @@ button:disabled { opacity: 0.5; }
   border-top: 1px solid #e3e7e6;
 }
 .acoes.fixas button { width: 100%; }
-.badge { background: var(--ambar); color: #3a2400; border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; }
+.offline { color: #2c7a5a; }
 .erro { color: #a3231a; }
 .aviso { color: #4a5b58; }
 .sobre { margin-top: 32px; }

@@ -36,35 +36,45 @@ class Conexao:
     host: str
     token: str
     project_id: str
+    project_name: str | None = None
 
     @property
     def base_url(self) -> str:
         return f'https://{self.host}/v1/key/{self.token}/projects/{self.project_id}'
 
 
-def _server_url(bruto: str) -> str:
+def _payload(bruto: str) -> tuple[str, str | None]:
+    """Devolve (server_url, nome_do_projeto).
+
+    O QR do Collect traz `project.name`; a URL pura não traz, e nesse caso o nome
+    é derivado do próprio projeto.
+    """
     texto = bruto.strip()
 
+    if texto.startswith('http://') or texto.startswith('https://'):
+        return texto, None
+
+    dados: dict | None = None
     if texto.startswith('{'):
         dados = json.loads(texto)
-        if isinstance(dados, dict) and 'general' in dados:
-            return dados['general']['server_url']
+    else:
+        # QR do Collect: base64 de JSON comprimido com zlib.
+        try:
+            descomprimido = zlib.decompress(base64.b64decode(texto + '=' * (-len(texto) % 4)))
+            dados = json.loads(descomprimido)
+        except Exception as exc:  # noqa: BLE001 - formato desconhecido
+            raise QrInvalido('conteúdo de QR não reconhecido') from exc
+
+    if not isinstance(dados, dict) or 'general' not in dados:
         raise QrInvalido('JSON sem general.server_url')
 
-    if texto.startswith('http://') or texto.startswith('https://'):
-        return texto
-
-    # QR do Collect: base64 de JSON comprimido com zlib.
-    try:
-        descomprimido = zlib.decompress(base64.b64decode(texto + '=' * (-len(texto) % 4)))
-        dados = json.loads(descomprimido)
-        return dados['general']['server_url']
-    except Exception as exc:  # noqa: BLE001 - formato desconhecido
-        raise QrInvalido('conteúdo de QR não reconhecido') from exc
+    projeto = dados.get('project') or {}
+    nome = projeto.get('name') if isinstance(projeto, dict) else None
+    return dados['general']['server_url'], (nome or None)
 
 
 def parse_qr(bruto: str, settings: Settings) -> Conexao:
-    url = _server_url(bruto)
+    url, nome_projeto = _payload(bruto)
     partes = urlparse(url)
 
     if partes.scheme != 'https':
@@ -85,7 +95,7 @@ def parse_qr(bruto: str, settings: Settings) -> Conexao:
     if settings.allowed_projects and projeto not in settings.allowed_projects:
         raise QrInvalido('projeto fora da allowlist')
 
-    return Conexao(host=host, token=token, project_id=projeto)
+    return Conexao(host=host, token=token, project_id=projeto, project_name=nome_projeto)
 
 
 class CentralClient:

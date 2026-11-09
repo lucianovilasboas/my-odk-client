@@ -16,12 +16,14 @@ quando houver conexão e sessão válida.
 | Configuração por QR do App User (câmera ou colar) | ✅ |
 | Projeto e formulário vêm do QR, como no Collect | ✅ |
 | Sessão em cookie cifrado; token nunca no navegador | ✅ |
-| Baixar pacote (XML + CSV) e usar offline | ✅ |
+| Baixar formulários automaticamente ao conectar | ✅ |
+| Botão Atualizar: rebaixa só o que mudou (inclusive datasets) | ✅ |
 | Preencher com o motor oficial do ODK | ✅ |
 | Uma pergunta por tela, com progresso e retorno | ✅ |
-| Autosave e retomada de rascunho após recarregar | ✅ |
+| Autosave e retomada no mesmo ponto do rascunho | ✅ |
 | Finalizar e enfileirar | ✅ |
-| Enviar e confirmar no Central | ✅ (testado via adaptador) |
+| Finalizar envia na hora se houver rede; senão enfileira | ✅ |
+| Enviar e confirmar no Central | ✅ |
 | Instalar como app (manifesto + service worker) | ✅ |
 
 | Homologação em Android/iOS | ❌ pendente |

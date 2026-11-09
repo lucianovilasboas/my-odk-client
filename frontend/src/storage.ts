@@ -17,7 +17,7 @@ export interface Formulario {
 export interface Pacote {
   xmlFormId: string
   xml: string
-  recursos: { nome: string; bytes: Uint8Array }[]
+  recursos: { nome: string; bytes: Uint8Array; hash: string }[]
   preparadoEm: number
 }
 
@@ -27,6 +27,8 @@ export interface Rascunho {
   instanceID: string
   revisao: number
   xml: string
+  /** Pergunta em que o agente parou, para retomar no mesmo ponto. */
+  paginaNodeset?: string
   atualizadoEm: number
 }
 
