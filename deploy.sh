@@ -96,6 +96,10 @@ docker network inspect proxy >/dev/null 2>&1 ||
 # --------------------------------------------------------------------------- #
 info 'construindo imagem'
 
+# A versão exibida na interface vem da tag, nunca digitada à mão.
+export VITE_APP_VERSION="$VERSAO"
+ok "versão embutida no build: $VITE_APP_VERSION"
+
 cd "$RAIZ/deploy"
 docker compose build
 

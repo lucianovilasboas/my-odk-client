@@ -2,8 +2,9 @@
 import { ref } from 'vue'
 import QrScanner from '../components/QrScanner.vue'
 import BotaoPilula from '../components/BotaoPilula.vue'
+import { VERSAO } from '../versao'
 
-const props = defineProps<{ conectando: boolean; erro: string | null; versao: string }>()
+const props = defineProps<{ conectando: boolean; erro: string | null }>()
 const emit = defineEmits<{ (e: 'conectar', qr: string): void }>()
 
 const qr = ref('')
@@ -51,7 +52,7 @@ function recebido(valor: string) {
 
     <p v-if="props.erro" class="erro aviso" role="alert">{{ props.erro }}</p>
 
-    <footer class="rodape texto-secundario">My ODK Client {{ props.versao }}</footer>
+    <footer class="rodape texto-secundario">My ODK Client {{ VERSAO }}</footer>
 
     <QrScanner v-if="escaneando" @ler="recebido" @fechar="escaneando = false" />
   </section>

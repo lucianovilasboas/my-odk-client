@@ -11,6 +11,7 @@ import {
   type Rascunho,
 } from './storage'
 import { somErro, somSucesso } from './som'
+import { VERSAO } from './versao'
 import Icone from './components/Icone.vue'
 import FillView from './views/FillView.vue'
 import SetupView from './views/SetupView.vue'
@@ -29,8 +30,6 @@ type Tela =
   | 'fila'
   | 'enviados'
   | 'preenchendo'
-
-const VERSAO = '0.5.0'
 
 const tela = ref<Tela>('carregando')
 const erro = ref<string | null>(null)
@@ -319,7 +318,6 @@ async function reconfigurar() {
     v-else-if="tela === 'setup'"
     :conectando="conectando"
     :erro="erro"
-    :versao="VERSAO"
     @conectar="conectar"
   />
 
@@ -396,6 +394,8 @@ async function reconfigurar() {
         :nome-do-formulario="nomeDoFormulario"
       />
     </main>
+
+    <footer class="versao texto-secundario">My ODK Client {{ VERSAO }}</footer>
   </template>
 </template>
 
@@ -458,5 +458,14 @@ h1 {
 .conteudo {
   max-width: 640px;
   margin: 0 auto;
+}
+.versao {
+  margin: 32px auto 0;
+  padding: 0 16px 24px;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  max-width: 640px;
 }
 </style>
