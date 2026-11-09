@@ -20,6 +20,9 @@ quando houver conexão e sessão válida.
 | Botão Atualizar: rebaixa só o que mudou (inclusive datasets) | ✅ |
 | Preencher com o motor oficial do ODK | ✅ |
 | Uma pergunta por tela, com progresso e retorno | ✅ |
+| Perguntas dependentes na mesma tela (tipo `field-list`) | ✅ |
+| Obrigatórias bloqueiam o avanço | ✅ |
+| Geopoint com captura de GPS do aparelho | ✅ |
 | Autosave e retomada no mesmo ponto do rascunho | ✅ |
 | Finalizar e enfileirar | ✅ |
 | Finalizar envia na hora se houver rede; senão enfileira | ✅ |
