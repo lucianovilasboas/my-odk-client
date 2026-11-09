@@ -11,6 +11,7 @@ import {
   type Rascunho,
 } from './storage'
 import FillView from './views/FillView.vue'
+import { somErro, somSucesso } from './som'
 import SetupView from './views/SetupView.vue'
 
 type Tela = 'carregando' | 'setup' | 'lista' | 'preenchendo'
@@ -105,9 +106,11 @@ async function conectar(qr: string) {
     await aplicarSessao(sessao.scope)
     await carregarBase(sessao.workspaceId)
     tela.value = 'lista'
+    somSucesso()
     await sincronizar()
   } catch (e) {
     erro.value = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)
+    somErro()
   } finally {
     conectando.value = false
   }
@@ -224,6 +227,23 @@ async function enviarPendentes() {
   aviso.value = 'Envio concluído. Toque em Atualizar para trazer os cadastros novos.'
 }
 
+async function descartar(rascunho: Rascunho) {
+  if (!base.value) return
+
+  const formulario = formularios.value.find((f) => f.xmlFormId === rascunho.xmlFormId)
+  const nome = formulario?.name ?? rascunho.xmlFormId
+  const quando = new Date(rascunho.atualizadoEm).toLocaleString('pt-BR')
+
+  const confirmado = window.confirm(
+    `Descartar o rascunho de ${nome}, salvo em ${quando}? As respostas não podem ser recuperadas.`,
+  )
+  if (!confirmado) return
+
+  await base.value.apagarRascunho(rascunho.localId)
+  aviso.value = 'Rascunho descartado.'
+  await atualizarPainel()
+}
+
 async function reconfigurar() {
   if (!base.value || !workspace.value) return
 
@@ -317,6 +337,7 @@ async function reconfigurar() {
         <small>salvo em {{ new Date(r.atualizadoEm).toLocaleString('pt-BR') }}</small>
         <div class="acoes">
           <button @click="iniciar(r.xmlFormId, r.localId)">Continuar</button>
+          <button class="descartar" @click="descartar(r)">Descartar</button>
         </div>
       </article>
 
@@ -409,6 +430,7 @@ button:disabled { opacity: 0.5; }
 }
 .acoes.fixas button { width: 100%; }
 .offline { color: #2c7a5a; }
+.descartar { color: #a3231a; border-color: #e0b4ae; }
 .erro { color: #a3231a; }
 .aviso { color: #4a5b58; }
 .sobre { margin-top: 32px; }
