@@ -99,6 +99,10 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | Coletar sem rede | campo aceita digitação e autosave confirma "Salvo neste aparelho" |
 | Atualizar sem rede | botão desabilitado, sem erro previsível |
 | Captive portal | chamadas abortam em 6 s em vez de pendurar a abertura |
+| Enviar sem rede | botão "Sem conexão", desabilitado; contador de tentativas intacto |
+| Reconectar | envio automático dispara sozinho e a fila esvazia |
+| Diário de envio | uma entrada por tentativa, sem respostas nem token no registro |
+| Expurgo do diário | 520 registros (metade com 100 dias) → 260 restantes, 0 vencidos |
 
 ## 5. Conclusão do gate
 

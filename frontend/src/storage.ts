@@ -5,7 +5,7 @@
  * expõe rascunhos, pacotes ou fila do anterior.
  */
 
-const VERSAO = 2
+const VERSAO = 3
 
 export interface Formulario {
   xmlFormId: string
@@ -40,6 +40,21 @@ export interface ItemFila {
   tentativas: number
   ultimoErro?: string
   atualizadoEm: number
+}
+
+/** Registro de uma tentativa de envio. Nunca contém respostas nem token. */
+export interface RegistroEnvio {
+  id: string
+  em: number
+  localId: string
+  xmlFormId: string
+  instanceID: string
+  resultado: 'confirmado' | 'falha'
+  tentativa: number
+  codigo?: string
+  httpStatus?: number
+  duracaoMs: number
+  alvo: string
 }
 
 export interface Escopo {
@@ -85,6 +100,10 @@ export function abrirBase(workspaceId: string) {
       if (!db.objectStoreNames.contains('rascunhos')) db.createObjectStore('rascunhos', { keyPath: 'localId' })
       if (!db.objectStoreNames.contains('fila')) db.createObjectStore('fila', { keyPath: 'localId' })
       if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta')
+      if (!db.objectStoreNames.contains('envios')) {
+        const envios = db.createObjectStore('envios', { keyPath: 'id' })
+        envios.createIndex('porEm', 'em')
+      }
     }
     requisicao.onsuccess = () => resolve(requisicao.result)
     requisicao.onerror = () => reject(requisicao.error)
@@ -158,6 +177,41 @@ export function abrirBase(workspaceId: string) {
         tx.objectStore('fila').put(item)
         tx.objectStore('rascunhos').delete(item.localId)
       })
+    },
+
+    async registrarEnvio(registro: RegistroEnvio): Promise<void> {
+      const db = await pronto
+      await transacao(db, ['envios'], 'readwrite', (tx) => {
+        tx.objectStore('envios').put(registro)
+      })
+    },
+
+    async listarEnvios(limite = 100): Promise<RegistroEnvio[]> {
+      const db = await pronto
+      const todos = await pedir(db.transaction('envios').objectStore('envios').getAll())
+      return (todos as RegistroEnvio[]).sort((a, b) => b.em - a.em).slice(0, limite)
+    },
+
+    /** Log é diagnóstico, não dado de coleta: pode ser podado sem consequência. */
+    async expurgarEnvios(dias = 90, maximo = 500): Promise<number> {
+      const db = await pronto
+      const todos = (await pedir(db.transaction('envios').objectStore('envios').getAll())) as RegistroEnvio[]
+      const corte = Date.now() - dias * 24 * 60 * 60 * 1000
+
+      const manter = new Set(
+        todos
+          .filter((r) => r.em >= corte)
+          .sort((a, b) => b.em - a.em)
+          .slice(0, maximo)
+          .map((r) => r.id),
+      )
+      const remover = todos.filter((r) => !manter.has(r.id))
+      if (!remover.length) return 0
+
+      await transacao(db, ['envios'], 'readwrite', (tx) => {
+        for (const registro of remover) tx.objectStore('envios').delete(registro.id)
+      })
+      return remover.length
     },
 
     async listarFila(): Promise<ItemFila[]> {
