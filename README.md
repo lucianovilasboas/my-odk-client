@@ -21,6 +21,8 @@ quando houver conexão e sessão válida.
 | Botão Atualizar: rebaixa só o que mudou (inclusive datasets) | ✅ |
 | Preencher com o motor oficial do ODK | ✅ |
 | Uma pergunta por tela, com progresso e retorno | ✅ |
+| Listas longas com busca (autocomplete), sem acento | ✅ |
+| Botões acima da pergunta quando há teclado; Enter avança | ✅ |
 | Perguntas dependentes na mesma tela (tipo `field-list`) | ✅ |
 | Obrigatórias bloqueiam o avanço | ✅ |
 | Geopoint com captura de GPS do aparelho | ✅ |

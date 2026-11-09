@@ -4,6 +4,7 @@ import { api, ApiError } from '../api'
 import { carregar, restaurar, serializar } from '../engine'
 import type { Base } from '../storage'
 import NodeView from '../components/NodeView.vue'
+import { lerAparencias, precisaEscrita, type MapaAparencias } from '../aparencias'
 
 /**
  * Preenchimento com uma pergunta por tela, como no Collect.
@@ -36,6 +37,7 @@ const instanceID = ref('')
 const localId = ref(props.localId ?? crypto.randomUUID())
 const revisao = ref(0)
 const enviando = ref(false)
+const aparencias = ref<MapaAparencias>(new Map())
 /** Já foi finalizado: o desmonte não pode recriar o rascunho apagado. */
 const encerrado = ref(false)
 /** Só grava rascunho depois da primeira alteração real do agente. */
@@ -102,6 +104,34 @@ const ultima = computed(() => indice.value >= total.value - 1)
 const progresso = computed(() => (total.value ? ((indice.value + 1) / total.value) * 100 : 0))
 
 const nosDaPagina = computed<any[]>(() => (atual.value ? [atual.value.no, ...atual.value.extras] : []))
+
+/** Telas com escrita levam os botões para cima; o teclado cobre o rodapé. */
+const usaTeclado = computed(() =>
+  nosDaPagina.value.some((no) => precisaEscrita(no, aparencias.value)),
+)
+
+const deslocamentoTeclado = ref(0)
+
+function medirTeclado() {
+  const vv = window.visualViewport
+  if (!vv) return
+  deslocamentoTeclado.value = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))
+}
+
+onMounted(() => {
+  window.visualViewport?.addEventListener('resize', medirTeclado)
+  window.visualViewport?.addEventListener('scroll', medirTeclado)
+})
+
+onBeforeUnmount(() => {
+  window.visualViewport?.removeEventListener('resize', medirTeclado)
+  window.visualViewport?.removeEventListener('scroll', medirTeclado)
+})
+
+function recolherTeclado() {
+  const ativo = document.activeElement as HTMLElement | null
+  if (ativo && typeof ativo.blur === 'function') ativo.blur()
+}
 
 /** Reancora a posição pelo nó, não pelo número — a lista muda de tamanho. */
 watch(paginas, (novas, antigas) => {
@@ -180,6 +210,7 @@ async function salvar() {
 
 function avancar() {
   erro.value = null
+  recolherTeclado()
   if (paginaInvalida(atual.value)) {
     erro.value = 'Responda as perguntas obrigatórias desta tela para continuar.'
     return
@@ -189,6 +220,7 @@ function avancar() {
 
 function voltarPagina() {
   erro.value = null
+  recolherTeclado()
   if (indice.value > 0) indice.value -= 1
 }
 
@@ -282,6 +314,8 @@ onMounted(async () => {
     return
   }
 
+  aparencias.value = lerAparencias(pacote.xml)
+
   const recursos = new Map(
     pacote.recursos.map((r) => [r.nome, r.bytes] as [string, Uint8Array]),
   )
@@ -349,6 +383,14 @@ onBeforeUnmount(() => {
 
     <p v-if="erro" class="erro" role="alert">{{ erro }}</p>
 
+    <nav v-if="usaTeclado" class="rodape rodape-topo">
+      <button :disabled="indice === 0" @click="voltarPagina">Anterior</button>
+      <button v-if="!ultima" class="primario" @click="avancar">Próxima</button>
+      <button v-else class="primario" :disabled="enviando" @click="finalizar">
+        {{ enviando ? 'Enviando…' : 'Finalizar' }}
+      </button>
+    </nav>
+
     <div v-if="raiz && atual" class="pergunta">
       <p class="grupo">{{ atual.grupo }}</p>
       <NodeView
@@ -356,12 +398,14 @@ onBeforeUnmount(() => {
         :key="no.nodeId"
         :no="no"
         :versao="versao"
+        :aparencias="aparencias"
         @alterou="aoAlterar"
+        @avancar="avancar"
       />
     </div>
     <p v-else-if="raiz" class="aviso">Não há perguntas visíveis neste ponto do formulário.</p>
 
-    <nav class="rodape">
+    <nav v-if="!usaTeclado" class="rodape" :style="{ bottom: `${deslocamentoTeclado}px` }">
       <button :disabled="indice === 0" @click="voltarPagina">Anterior</button>
       <button v-if="!ultima" class="primario" @click="avancar">Próxima</button>
       <button v-else class="primario" :disabled="enviando" @click="finalizar">
@@ -391,5 +435,15 @@ onBeforeUnmount(() => {
   border-top: 1px solid #e3e7e6;
 }
 .rodape button { flex: 1; }
+.rodape-topo {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  bottom: auto;
+  padding: 8px 0;
+  border-top: 0;
+  border-bottom: 1px solid #e3e7e6;
+  background: #f5f6f6;
+}
 .erro { color: #a3231a; margin: 0; }
 </style>
