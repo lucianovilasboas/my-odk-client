@@ -66,3 +66,25 @@ def test_renovacao_no_servidor_reemite_cookie(client):
     assert resposta.status_code == 200
     depois = resposta.cookies.get('modk_session') or client.cookies.get('modk_session')
     assert depois and depois != antes
+
+
+def test_nome_do_projeto_vem_do_qr(client):
+    import base64
+    import json
+    import zlib
+
+    from .conftest import qr_url
+
+    payload = {'general': {'server_url': qr_url()}, 'project': {'name': 'IFNMG - Almenara - 3'}}
+    bruto = base64.b64encode(zlib.compress(json.dumps(payload).encode())).decode()
+
+    corpo = client.post('/api/v1/connections', json={'qr': bruto}).json()
+    assert corpo['scope']['projectName'] == 'IFNMG - Almenara - 3'
+    assert client.get('/api/v1/session').json()['scope']['projectName'] == 'IFNMG - Almenara - 3'
+
+
+def test_url_pura_gera_nome_de_fallback(client):
+    from .conftest import PROJECT, qr_url
+
+    corpo = client.post('/api/v1/connections', json={'qr': qr_url()}).json()
+    assert corpo['scope']['projectName'] == f'Projeto {PROJECT}'

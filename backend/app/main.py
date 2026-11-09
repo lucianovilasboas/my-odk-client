@@ -34,7 +34,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title='My ODK Client',
-    version='0.1.0',
+    version='0.3.0',
     docs_url='/api/docs',
     openapi_url='/api/openapi.json',
     lifespan=lifespan,
@@ -100,7 +100,13 @@ async def renovar_sessao(request: Request, call_next):
         return resposta
 
     if deve_renovar(dados, configuracao.session_ttl_seconds):
-        renovado = nova_sessao(dados['token'], dados['host'], dados['project_id'], configuracao.session_ttl_seconds)
+        renovado = nova_sessao(
+            dados['token'],
+            dados['host'],
+            dados['project_id'],
+            configuracao.session_ttl_seconds,
+            dados.get('project_name'),
+        )
         resposta.set_cookie(
             COOKIE,
             seal(configuracao.session_secret, renovado),
@@ -141,7 +147,13 @@ async def conectar(payload: QrRequest, response: Response) -> dict:
     cliente = CentralClient(conexao, configuracao, getattr(app.state, 'central_transport', None))
     formularios = await cliente.form_list()  # valida a credencial de fato
 
-    dados = nova_sessao(conexao.token, conexao.host, conexao.project_id, configuracao.session_ttl_seconds)
+    dados = nova_sessao(
+        conexao.token,
+        conexao.host,
+        conexao.project_id,
+        configuracao.session_ttl_seconds,
+        conexao.project_name,
+    )
     response.set_cookie(
         COOKIE,
         seal(configuracao.session_secret, dados),
@@ -155,7 +167,11 @@ async def conectar(payload: QrRequest, response: Response) -> dict:
     return {
         'connectionId': derive_workspace_id(configuracao.session_secret, conexao.token),
         'workspaceId': derive_workspace_id(configuracao.session_secret, conexao.token),
-        'scope': {'host': conexao.host, 'projectId': conexao.project_id},
+        'scope': {
+            'host': conexao.host,
+            'projectId': conexao.project_id,
+            'projectName': dados['project_name'],
+        },
         'forms': len(formularios),
         'expiresIn': configuracao.session_ttl_seconds,
     }
@@ -166,7 +182,11 @@ async def sessao(request: Request) -> dict:
     dados = sessao_atual(request)
     return {
         'workspaceId': derive_workspace_id(settings().session_secret, dados['token']),
-        'scope': {'host': dados['host'], 'projectId': dados['project_id']},
+        'scope': {
+            'host': dados['host'],
+            'projectId': dados['project_id'],
+            'projectName': dados.get('project_name') or f"Projeto {dados['project_id']}",
+        },
         'expiresAt': dados['exp'],
     }
 

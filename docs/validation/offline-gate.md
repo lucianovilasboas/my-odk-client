@@ -72,7 +72,12 @@ Verificado em 2026-11-08 contra o projeto 14, somente leitura:
 | `GET /api/v1/forms` | 2 formulários, sem `key/` nas URLs |
 | `GET /api/v1/forms/form_parte_1/package` | XML de 36.094 bytes + `Agentes.csv` |
 | PWA no navegador | instala, baixa pacote, preenche, autosave visível |
-| Rascunho após recarregar a página | preservado |
+| Rascunho após recarregar a página | preservado, retomando na mesma pergunta e permitindo editar |
+| Relevância (`recusou_responder`) | pula do bloco de entrevista direto para o fim (10 de 10) |
+| Digitação | 20 caracteres digitados sem perda de valor nem de foco |
+| Finalizar com rede | submissão enviada na hora, sem deixar rascunho |
+| Finalizar sem rede | item na fila, rascunho removido |
+| Atualizar com dataset alterado | detecta hash novo do anexo e rebaixa (1 formulário atualizado) |
 
 ## 5. Conclusão do gate
 

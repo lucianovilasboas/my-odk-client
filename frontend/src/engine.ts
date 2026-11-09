@@ -19,8 +19,8 @@ export type ResolverRecurso = (caminho: string) => Uint8Array | null
 export type AnyFormInstance = FormInstance<'create'> | FormInstance<'restore'>
 
 export interface FormularioCarregado {
-  xmlFormId: string
-  instancia: FormInstance<'create'>
+  instancia: AnyFormInstance
+  root: AnyNode
 }
 
 /** Resolve `jr://file-csv/Nome.csv` a partir do pacote local, sem rede. */
@@ -46,14 +46,15 @@ export async function carregar(
     throw new Error(`formulário não pôde ser carregado: ${resultado.error?.message ?? 'motivo desconhecido'}`)
   }
 
-  return { xmlFormId: '', instancia: resultado.createInstance() }
+  const instancia = resultado.createInstance()
+  return { instancia, root: instancia.root }
 }
 
 export async function restaurar(
   xml: string,
   recursos: Map<string, Uint8Array>,
   payloadXml: string,
-): Promise<FormInstance<'restore'>> {
+): Promise<FormularioCarregado> {
   const resultado = await loadForm(xml, { fetchFormAttachment: resolverDoPacote(recursos) })
   if (resultado.status === 'failure') {
     throw new Error(`formulário não pôde ser carregado: ${resultado.error?.message ?? ''}`)
@@ -61,7 +62,8 @@ export async function restaurar(
 
   const dados = new FormData()
   dados.append('xml_submission_file', new Blob([payloadXml], { type: 'text/xml' }), 'submission.xml')
-  return resultado.restoreInstance({ data: [dados as never] })
+  const instancia = await resultado.restoreInstance({ data: [dados as never] })
+  return { instancia, root: instancia.root }
 }
 
 /** Percorre a árvore de nós, que o motor expõe em `currentState.children`. */

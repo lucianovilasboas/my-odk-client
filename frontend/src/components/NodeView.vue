@@ -1,24 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 /**
  * Renderizador mínimo do corpus: grupos, notas, texto, inteiro, geopoint e
- * seleção simples/múltipla. Tipos fora dessa lista não são renderizados e
- * devem bloquear a coleta (fail-closed), como manda o PLAN.md §1, invariante 10.
+ * seleção simples/múltipla.
+ *
+ * O campo de texto é **não controlado**: o valor do motor nunca é reescrito
+ * enquanto o campo está em foco. Reescrever no meio da digitação fecha o
+ * teclado no Android e perde a composição do IME.
  */
 
 const props = defineProps<{ no: any; versao: number }>()
-const emit = defineEmits<{ (e: 'alterou'): void }>()
+const emit = defineEmits<{ (e: 'alterou', imediato: boolean): void }>()
 
 const tipo = computed(() => props.no?.nodeType as string)
 const estado = computed(() => {
-  void props.versao // força recálculo quando o motor muda
+  void props.versao
   return props.no?.currentState
 })
 const rotulo = computed(() => estado.value?.label?.asString ?? '')
 const visivel = computed(() => {
   void props.versao
-  return props.no?.currentState?.isRelevant !== false
+  return props.no?.currentState?.relevant !== false
 })
 const opcoes = computed<{ value: string; label: string }[]>(() =>
   (estado.value?.valueOptions ?? []).map((i: any) => ({ value: i.value, label: i.label.asString })),
@@ -31,27 +34,49 @@ const valor = computed<string[]>(() => {
 
 const filhos = computed<any[]>(() => estado.value?.children ?? [])
 
-function texto(): string {
-  return valor.value[0] ?? ''
+const campo = ref<HTMLInputElement | null>(null)
+const valorLocal = ref('')
+
+function paraTexto(bruto: unknown): string {
+  if (bruto === null || bruto === undefined) return ''
+  return String(bruto)
 }
+
+watch(
+  () => estado.value?.value,
+  (novo) => {
+    const texto = paraTexto(Array.isArray(novo) ? novo[0] : novo)
+    // Enquanto o campo está em foco, o DOM manda: sobrescrever aqui é o que
+    // trava o teclado.
+    if (document.activeElement === campo.value) return
+    valorLocal.value = texto
+  },
+  { immediate: true },
+)
 
 function digitar(evento: Event) {
   const alvo = evento.target as HTMLInputElement
   const bruto = alvo.value
+  valorLocal.value = bruto
+
   const tipoValor = props.no.valueType as string
   const convertido =
-    tipoValor === 'int' || tipoValor === 'decimal'
-      ? bruto === ''
-        ? null
-        : Number(bruto)
-      : bruto
+    tipoValor === 'int' || tipoValor === 'decimal' ? (bruto === '' ? null : Number(bruto)) : bruto
+
   props.no.setValue(convertido)
-  emit('alterou')
+  emit('alterou', false)
+}
+
+/** Ao sair do campo, aceita normalizações do motor (ex.: aparo de espaços). */
+function sairDoCampo() {
+  const normalizado = paraTexto(props.no?.currentState?.value)
+  if (normalizado !== valorLocal.value) valorLocal.value = normalizado
+  emit('alterou', true)
 }
 
 function marcarSimples(valorOpcao: string) {
   props.no.selectValue(valorOpcao)
-  emit('alterou')
+  emit('alterou', true)
 }
 
 function alternarMultiplo(valorOpcao: string) {
@@ -59,7 +84,7 @@ function alternarMultiplo(valorOpcao: string) {
   if (atuais.has(valorOpcao)) atuais.delete(valorOpcao)
   else atuais.add(valorOpcao)
   props.no.selectValues([...atuais])
-  emit('alterou')
+  emit('alterou', true)
 }
 </script>
 
@@ -72,7 +97,7 @@ function alternarMultiplo(valorOpcao: string) {
         :key="filho.nodeId"
         :no="filho"
         :versao="versao"
-        @alterou="emit('alterou')"
+        @alterou="(imediato: boolean) => emit('alterou', imediato)"
       />
     </div>
 
@@ -82,12 +107,18 @@ function alternarMultiplo(valorOpcao: string) {
       <label :for="no.nodeId">{{ rotulo }}</label>
       <input
         :id="no.nodeId"
+        ref="campo"
         :type="no.valueType === 'int' || no.valueType === 'decimal' ? 'number' : 'text'"
-        :value="texto()"
         :inputmode="no.valueType === 'int' ? 'numeric' : undefined"
+        autocomplete="off"
+        autocapitalize="sentences"
+        :value="valorLocal"
         @input="digitar"
+        @blur="sairDoCampo"
       />
-      <small v-if="no.currentState?.validationState?.valid === false" class="erro">{{ rotulo }} é obrigatório</small>
+      <small v-if="no.currentState?.validationState?.violation" class="erro">
+        Resposta obrigatória ou inválida
+      </small>
     </div>
 
     <div v-else-if="tipo === 'select'" class="campo">

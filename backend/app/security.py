@@ -68,13 +68,20 @@ def unseal(secret: bytes, blob: str) -> dict[str, Any]:
     return dados
 
 
-def nova_sessao(token: str, host: str, project_id: str, ttl_seconds: int) -> dict[str, Any]:
+def nova_sessao(
+    token: str,
+    host: str,
+    project_id: str,
+    ttl_seconds: int,
+    project_name: str | None = None,
+) -> dict[str, Any]:
     agora = int(time.time())
     return {
         'v': _V,
         'token': token,
         'host': host,
         'project_id': project_id,
+        'project_name': project_name or f'Projeto {project_id}',
         'iat': agora,
         'exp': agora + ttl_seconds,
     }
