@@ -70,6 +70,10 @@ por requisição mantém a janela de rebinding em milissegundos.
   o momento do QR, com mensagem explícita.
 - Central em rede privada deixa de funcionar sem configuração explícita — o que
   é intencional.
+- **Porta 443 fixa.** Um Central em porta alternativa é recusado. Suportar
+  exigiria carregar a porta em `Conexao`, incluí-la na URL de destino e resolver
+  o DNS **na mesma porta** — validar em 443 e conectar em outra coisa reabriria
+  o problema que a recusa evita. Não é suportado hoje, por decisão.
 
 ## Referências
 
