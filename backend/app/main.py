@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
+from anyio import to_thread
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,7 +35,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title='My ODK Client',
-    version='0.8.0',
+    version='0.8.1',
     docs_url='/api/docs',
     openapi_url='/api/openapi.json',
     lifespan=lifespan,
@@ -76,9 +77,12 @@ def sessao_atual(request: Request) -> dict:
     return unseal(settings().session_secret, blob)
 
 
-def cliente_central(request: Request, dados: dict | None = None) -> CentralClient:
+async def cliente_central(request: Request, dados: dict | None = None) -> CentralClient:
     dados = dados or sessao_atual(request)
-    conexao = parse_qr(
+    # `parse_qr` resolve DNS quando não há allowlist; sem thread, isso bloqueia o
+    # event loop e trava todas as requisições concorrentes durante o lookup.
+    conexao = await to_thread.run_sync(
+        parse_qr,
         f"https://{dados['host']}/v1/key/{dados['token']}/projects/{dados['project_id']}",
         settings(),
     )
@@ -146,7 +150,7 @@ async def health() -> dict:
 async def conectar(payload: QrRequest, response: Response) -> dict:
     configuracao = settings()
     try:
-        conexao = parse_qr(payload.qr, configuracao)
+        conexao = await to_thread.run_sync(parse_qr, payload.qr, configuracao)
     except QrInvalido as exc:
         return erro('UNSUPPORTED_FORM', str(exc), 400)
 
@@ -212,13 +216,13 @@ async def encerrar(request: Request) -> Response:
 
 @app.get('/api/v1/forms')
 async def listar_formularios(request: Request) -> dict:
-    cliente = cliente_central(request)
+    cliente = await cliente_central(request)
     return {'forms': await cliente.form_list()}
 
 
 @app.get('/api/v1/forms/{xml_form_id}/package')
 async def pacote(xml_form_id: str, request: Request) -> dict:
-    cliente = cliente_central(request)
+    cliente = await cliente_central(request)
     xml = await cliente.form_xml(xml_form_id)
     recursos = await cliente.manifest(xml_form_id)
 
@@ -241,7 +245,7 @@ async def recurso(xml_form_id: str, filename: str, request: Request) -> Response
     if '/' in filename or '\\' in filename or '..' in filename:
         return erro('RESOURCE_PATH_INVALID', 'nome de recurso inválido', 400)
 
-    cliente = cliente_central(request)
+    cliente = await cliente_central(request)
     conteudo, content_type = await cliente.resource(xml_form_id, filename)
     return Response(content=conteudo, media_type=content_type)
 
@@ -260,7 +264,7 @@ async def enviar(request: Request) -> Response:
         return erro('UNSUPPORTED_FORM', 'submissão precisa ser multipart/form-data', 415)
 
     corpo = await request.body()
-    cliente = cliente_central(request)
+    cliente = await cliente_central(request)
     resposta = await cliente.submit(corpo, tipo)
 
     if resposta.status_code == 201:

@@ -549,7 +549,7 @@ Regras transversais:
 ## 12. Segurança, privacidade e licenças
 
 - QR de configuração pode conter credencial. Tratar como segredo, não salvar em screenshot/log/analytics; não pedir que o usuário cole credenciais no chat.
-- Backend valida servidor e projeto: allowlist opcional (ADR 0004); por padrão exige host https público, resolvido por DNS/IP a cada requisição, e recusa loopback, rede privada, link-local/metadata e faixas reservadas. Não segue redirecionamento e impede SSRF e encaminhamento de token a outro host. Hosts privados só entram por configuração administrativa explícita.
+- Backend valida servidor e projeto: allowlist opcional (ADR 0004); por padrão exige host https público, resolvido por DNS/IP a cada requisição em thread separada, recusa porta diferente de 443, loopback, rede privada, link-local/metadata e faixas reservadas. Não segue redirecionamento e impede SSRF e encaminhamento de token a outro host. Hosts privados só entram por configuração administrativa explícita.
 - XML/CSV/arquivos são entradas não confiáveis: bloquear DTD/entidades externas no servidor, limitar profundidade/tamanho/repeats e tempo de processamento; não usar `eval` para XPath.
 - Sanitizar labels/HTML e usar CSP compatível com dependências verificadas. XSS tem acesso ao ambiente de coleta; não adicionar scripts terceiros por conveniência.
 - Autenticação própria com cookie HttpOnly/Secure/SameSite apropriado; CSRF em escritas; limites por conexão; logs mascaram URLs `/key/...` e segredos.
