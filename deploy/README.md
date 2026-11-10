@@ -47,8 +47,11 @@ docker compose logs -f app
 ## Projeto e formulário
 
 Não há projeto fixo: o `projectId` vem do QR do App User, como no Collect.
-`ALLOWED_CENTRAL_HOSTS` continua obrigatório (proteção contra SSRF);
-`ALLOWED_PROJECT_IDS` é opcional e só serve para restringir.
+Não há allowlist obrigatória: por padrão o adaptador aceita qualquer Central
+https público vindo do QR e recusa loopback, rede privada e metadata pela
+validação de DNS/IP (ADR 0004). `ALLOWED_CENTRAL_HOSTS` e `ALLOWED_PROJECT_IDS`
+seguem disponíveis, opcionais, apenas para restringir ou liberar um Central em
+rede privada.
 
 ## Verificar
 

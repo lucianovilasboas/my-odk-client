@@ -79,12 +79,15 @@ set -a
 . "$ENV_FILE"
 set +a
 
-[ -n "${ALLOWED_CENTRAL_HOSTS:-}" ] || morrer 'preencha ALLOWED_CENTRAL_HOSTS em deploy/.env'
-ok "hosts aceitos: $ALLOWED_CENTRAL_HOSTS"
-if [ -z "${ALLOWED_PROJECT_IDS:-}" ]; then
-  ok 'projetos: qualquer um do host (vem do QR)'
+if [ -n "${ALLOWED_CENTRAL_HOSTS:-}" ]; then
+  ok "hosts restritos a: $ALLOWED_CENTRAL_HOSTS"
 else
+  ok 'hosts: qualquer Central https público vindo do QR'
+fi
+if [ -n "${ALLOWED_PROJECT_IDS:-}" ]; then
   ok "projetos restritos a: $ALLOWED_PROJECT_IDS"
+else
+  ok 'projetos: qualquer um do host (vem do QR)'
 fi
 
 # --------------------------------------------------------------------------- #
