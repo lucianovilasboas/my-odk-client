@@ -9,7 +9,9 @@ quem preferir colar.
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
+import socket
 import zlib
 from dataclasses import dataclass
 from urllib.parse import unquote, urlparse
@@ -29,6 +31,10 @@ class CentralError(RuntimeError):
         super().__init__(message)
         self.code = code
         self.status = status
+
+
+# Indireção para os testes não dependerem de DNS real.
+_resolver = socket.getaddrinfo
 
 
 @dataclass(frozen=True)
@@ -73,6 +79,36 @@ def _payload(bruto: str) -> tuple[str, str | None]:
     return dados['general']['server_url'], (nome or None)
 
 
+def _host_publico(host: str) -> None:
+    """Recusa host que resolva para qualquer endereço não público.
+
+    Sem allowlist explícita, é esta checagem que impede SSRF: o QR é entrada não
+    confiável e não pode fazer o adaptador alcançar loopback, rede privada,
+    link-local (inclusive metadata de nuvem) ou faixa reservada. Resolve a cada
+    requisição, para que o cache do sistema respeite o TTL do DNS.
+
+    Risco residual: a conexão TCP abre alguns milissegundos após a validação.
+    Fechar essa janela exigiria conectar ao IP validado preservando o SNI do host.
+    """
+    try:
+        infos = _resolver(host, 443, type=socket.SOCK_STREAM)
+    except OSError as exc:
+        raise QrInvalido('não foi possível resolver o servidor') from exc
+
+    enderecos = {info[4][0].split('%', 1)[0] for info in infos}
+    if not enderecos:
+        raise QrInvalido('não foi possível resolver o servidor')
+
+    for bruto in enderecos:
+        try:
+            ip = ipaddress.ip_address(bruto)
+        except ValueError as exc:
+            raise QrInvalido('servidor aponta para endereço inválido') from exc
+        # `is_global` sozinho deixa passar multicast; exigimos as duas condições.
+        if not ip.is_global or ip.is_multicast:
+            raise QrInvalido('servidor aponta para endereço não público')
+
+
 def parse_qr(bruto: str, settings: Settings) -> Conexao:
     url, nome_projeto = _payload(bruto)
     partes = urlparse(url)
@@ -80,8 +116,13 @@ def parse_qr(bruto: str, settings: Settings) -> Conexao:
     if partes.scheme != 'https':
         raise QrInvalido('o servidor precisa ser https')
     host = (partes.hostname or '').lower()
-    if host not in settings.allowed_hosts:
-        raise QrInvalido('servidor fora da allowlist')
+    if not host:
+        raise QrInvalido('servidor sem host')
+    if settings.allowed_hosts:
+        if host not in settings.allowed_hosts:
+            raise QrInvalido('servidor fora da allowlist')
+    else:
+        _host_publico(host)
 
     caminho = partes.path.strip('/').split('/')
     if len(caminho) != 5 or caminho[0] != 'v1' or caminho[1] != 'key' or caminho[3] != 'projects':
@@ -112,6 +153,7 @@ class CentralClient:
             transport=self._transport,
             headers={'X-OpenRosa-Version': '1.0'},
             follow_redirects=False,
+            trust_env=False,
         )
 
     async def form_list(self) -> list[dict[str, str]]:
