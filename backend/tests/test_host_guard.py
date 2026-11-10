@@ -153,3 +153,20 @@ def test_destino_que_deixa_de_validar_no_meio_da_sessao_retorna_502(client, monk
         'message': 'não foi possível resolver o servidor',
         'retryable': True,
     }
+
+
+def test_porta_443_explicita_e_aceita(monkeypatch):
+    _resolve_para(monkeypatch, '93.184.216.34')
+    conexao = parse_qr('https://central.exemplo.test:443/v1/key/tok/projects/1', _settings())
+    assert conexao.host == 'central.exemplo.test'
+
+
+def test_porta_alternativa_e_recusada_antes_do_dns(monkeypatch):
+    _sem_dns(monkeypatch)
+    with pytest.raises(QrInvalido, match='443'):
+        parse_qr('https://central.exemplo.test:8443/v1/key/tok/projects/1', _settings())
+
+
+def test_porta_invalida_e_recusada():
+    with pytest.raises(QrInvalido):
+        parse_qr('https://central.exemplo.test:abc/v1/key/tok/projects/1', _settings())

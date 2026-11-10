@@ -33,6 +33,10 @@ allowlist era a única barreira, e não havia validação de DNS/IP no caminho.
    efetiva continua sendo o App User no Central.
 4. O cliente HTTP usa `trust_env=False`, para que proxy configurado no ambiente
    não contorne a validação de destino, e continua sem seguir redirecionamentos.
+5. **Porta 443 apenas.** A URL de destino é remontada a partir de host e projeto,
+   sem porta; aceitar uma porta alternativa mandaria o token de App User para o
+   que estivesse na 443. Portas diferentes de 443 são recusadas antes de qualquer
+   resolução DNS.
 
 Não há cache próprio de DNS: o cache do sistema respeita o TTL e a revalidação
 por requisição mantém a janela de rebinding em milissegundos.
@@ -59,8 +63,9 @@ por requisição mantém a janela de rebinding em milissegundos.
 
 - Entre validar o DNS e abrir o TCP resta uma janela de milissegundos para
   rebinding. Mitigada pela revalidação por requisição; fechá-la exige pin de IP.
-- Um `getaddrinfo` por requisição (servido pelo cache do sistema). Se virar
-  gargalo, a evolução é cache com TTL curto ou IP fixado no transporte.
+- Um `getaddrinfo` por requisição (servido pelo cache do sistema), executado em
+  thread para não bloquear o event loop. Se virar gargalo, a evolução é cache com
+  TTL curto ou IP fixado no transporte.
 - O backend deixa de falhar no startup por falta de allowlist; o erro move para
   o momento do QR, com mensagem explícita.
 - Central em rede privada deixa de funcionar sem configuração explícita — o que

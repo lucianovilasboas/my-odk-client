@@ -115,6 +115,16 @@ def parse_qr(bruto: str, settings: Settings) -> Conexao:
 
     if partes.scheme != 'https':
         raise QrInvalido('o servidor precisa ser https')
+
+    # A porta é descartada ao montar a URL de destino; aceitar uma porta
+    # alternativa mandaria o token de App User para outro serviço na 443.
+    try:
+        porta = partes.port
+    except ValueError as exc:
+        raise QrInvalido('porta inválida na URL do servidor') from exc
+    if porta not in (None, 443):
+        raise QrInvalido('o servidor precisa usar a porta 443')
+
     host = (partes.hostname or '').lower()
     if not host:
         raise QrInvalido('servidor sem host')
