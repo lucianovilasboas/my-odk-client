@@ -65,8 +65,6 @@ vivem na mesma origem — o Central não responde CORS.
 cd backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 SESSION_SECRET=$(openssl rand -base64 32) \
-ALLOWED_CENTRAL_HOSTS=odk.lucianovilasboas.com.br \
-ALLOWED_PROJECT_IDS=14 \
 COOKIE_SECURE=false STATIC_DIR=../frontend/dist \
 .venv/bin/uvicorn app.main:app --port 8099
 
@@ -79,7 +77,7 @@ Build de produção: `cd frontend && npm run build`; o backend serve `dist/`.
 Testes:
 
 ```bash
-cd backend && .venv/bin/python -m pytest          # 20 testes
+cd backend && .venv/bin/python -m pytest          # 54 testes
 cd spikes/offline-engine && npm test && npm run test:browser
 node --test 'tests/conformance/*.test.mjs'         # fixtures do corpus
 ```

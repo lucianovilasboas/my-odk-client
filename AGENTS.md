@@ -90,8 +90,9 @@ Documento operacional para agentes de código. Complementa o AGENTS.md global
 - Não interpreta lógica de formulário, não mantém segunda fila de coleta e não
   armazena submissões indefinidamente.
 - Credenciais cifradas; cookie de sessão HttpOnly/Secure/SameSite + CSRF em escritas.
-- Allowlist de servidor/projeto; validar DNS/IP e cada redirecionamento; bloquear
-  SSRF e metadata services.
+- Allowlist de servidor/projeto (opcional; por padrão, exigir host https público
+  validado por DNS/IP); validar cada redirecionamento; bloquear SSRF e metadata
+  services.
 - XML/CSV são entradas não confiáveis: sem DTD/entidades externas, com limites de
   tamanho, profundidade, repeats e tempo; nunca `eval` para XPath.
 - Encaminhar os bytes do XML congelado sem transformação.

@@ -29,7 +29,7 @@ QR correspondente. A auditoria do Central passa a refletir quem coletou.
 ```
 POST /api/v1/connections  { qr: "<conteúdo do QR>" }
   1. extrai host, token e projectId da server_url /v1/key/<token>/projects/{id}
-  2. valida o host contra allowlist (anti-SSRF)
+  2. valida o destino (allowlist opcional; padrão é host https público, ADR 0004)
   3. confirma o acesso chamando o formList do Central com esse token
   4. workspaceId = HMAC-SHA256(SESSION_SECRET, token), truncado
   5. devolve cookie cifrado + { connectionId, workspaceId, scope }

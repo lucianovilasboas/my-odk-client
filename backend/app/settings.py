@@ -19,8 +19,8 @@ class ConfigError(RuntimeError):
 @dataclass(frozen=True)
 class Settings:
     session_secret: bytes
-    allowed_hosts: tuple[str, ...]
-    allowed_projects: tuple[str, ...]
+    allowed_hosts: tuple[str, ...] = ()
+    allowed_projects: tuple[str, ...] = ()
     cookie_secure: bool = True
     session_ttl_seconds: int = 12 * 60 * 60
     central_timeout_seconds: float = 30.0
@@ -47,9 +47,10 @@ def load_settings(env: dict[str, str] | None = None) -> Settings:
     if not secret:
         raise ConfigError('SESSION_SECRET não configurado; gere com: openssl rand -base64 32')
 
+    # Opcional. Vazio é o padrão: cada host vindo do QR é validado por DNS/IP e
+    # precisa resolver apenas para endereços públicos (anti-SSRF, ADR 0004).
+    # Preencher restringe a lista e permite um Central em rede privada.
     hosts = tuple(h.strip().lower() for h in env.get('ALLOWED_CENTRAL_HOSTS', '').split(',') if h.strip())
-    if not hosts:
-        raise ConfigError('ALLOWED_CENTRAL_HOSTS vazio: o adaptador não pode aceitar qualquer host')
 
     # Opcional: o projeto vem do QR. Vazio significa aceitar qualquer projeto do
     # host permitido — quem autoriza o acesso é o App User no Central.

@@ -489,7 +489,8 @@ Este contrato é projeto novo, não uma API existente. Deve ser formalizado em `
 | `GET /api/v1/health` | Sem dados privados | 200/503 saúde do adaptador, sem garantia de alcance do Central |
 
 O conteúdo do QR é entrada não confiável: o adaptador extrai host, token e projeto, valida o
-host contra allowlist (anti-SSRF) e confirma o acesso chamando o `formList` com essa
+destino (allowlist opcional; por padrão exige host https público e recusa loopback, rede
+privada e metadata via DNS/IP — ADR 0004) e confirma o acesso chamando o `formList` com essa
 credencial antes de emitir a sessão. Erro de credencial não cria sessão nem grava nada.
 
 `Idempotency-Key` pertence à API própria: não presumir suporte a esse header pelo Central. Vincular a chave a conexão, identidade, `instanceID` e digest do envelope; reutilização com conteúdo diferente retorna 409. Requisições concorrentes recebem erro retryable enquanto a primeira possui lease, não dois envios independentes.
@@ -548,7 +549,7 @@ Regras transversais:
 ## 12. Segurança, privacidade e licenças
 
 - QR de configuração pode conter credencial. Tratar como segredo, não salvar em screenshot/log/analytics; não pedir que o usuário cole credenciais no chat.
-- Backend faz allowlist de servidor/projeto, valida DNS/IP e cada redirecionamento, impede SSRF, acesso a metadata services e encaminhamento de token a outro host. Hosts privados só entram por configuração administrativa explícita.
+- Backend valida servidor e projeto: allowlist opcional (ADR 0004); por padrão exige host https público, resolvido por DNS/IP a cada requisição, e recusa loopback, rede privada, link-local/metadata e faixas reservadas. Não segue redirecionamento e impede SSRF e encaminhamento de token a outro host. Hosts privados só entram por configuração administrativa explícita.
 - XML/CSV/arquivos são entradas não confiáveis: bloquear DTD/entidades externas no servidor, limitar profundidade/tamanho/repeats e tempo de processamento; não usar `eval` para XPath.
 - Sanitizar labels/HTML e usar CSP compatível com dependências verificadas. XSS tem acesso ao ambiente de coleta; não adicionar scripts terceiros por conveniência.
 - Autenticação própria com cookie HttpOnly/Secure/SameSite apropriado; CSRF em escritas; limites por conexão; logs mascaram URLs `/key/...` e segredos.

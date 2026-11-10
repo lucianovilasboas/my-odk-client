@@ -131,6 +131,12 @@ async def _central_handler(_: Request, exc: CentralError) -> JSONResponse:
     return erro(exc.code, str(exc), status, retryable)
 
 
+@app.exception_handler(QrInvalido)
+async def _qr_handler(_: Request, exc: QrInvalido) -> JSONResponse:
+    """Destino que deixou de validar no meio da sessão (ex.: DNS indisponível)."""
+    return erro('REMOTE_UNAVAILABLE', str(exc), 502, retryable=True)
+
+
 @app.get('/api/health')
 async def health() -> dict:
     return {'status': 'ok', 'service': 'my-odk-client'}
