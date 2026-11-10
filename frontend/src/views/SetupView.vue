@@ -22,7 +22,13 @@ function recebido(valor: string) {
 <template>
   <section class="inicio">
     <div class="hero">
-      <img src="/icons/icon-192.png" alt="" width="96" height="96" class="logo" />
+      <img
+        src="/branding/simbolo-envelhecer.png"
+        alt=""
+        width="120"
+        height="120"
+        class="logo"
+      />
       <h1 class="titulo">Coleta de campo<br />em qualquer lugar</h1>
       <p class="texto-secundario subtitulo">
         Funciona sem sinal. Envia ao ODK Central quando houver conexão.
@@ -52,7 +58,13 @@ function recebido(valor: string) {
 
     <p v-if="props.erro" class="erro aviso" role="alert">{{ props.erro }}</p>
 
-    <footer class="rodape texto-secundario">My ODK Client {{ VERSAO }}</footer>
+    <footer class="rodape">
+      <div class="instituicoes">
+        <img src="/branding/ifrj.png" alt="Instituto Federal do Rio de Janeiro" />
+        <img src="/branding/ifmg.png" alt="Instituto Federal de Minas Gerais" />
+      </div>
+      <p class="versao texto-secundario">My ODK Client {{ VERSAO }}</p>
+    </footer>
 
     <QrScanner v-if="escaneando" @ler="recebido" @fechar="escaneando = false" />
   </section>
@@ -67,14 +79,18 @@ function recebido(valor: string) {
   padding: calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
+  text-align: center;
 }
 .hero {
-  margin-top: 18vh;
+  margin-top: 8vh;
   display: grid;
+  justify-items: center;
   gap: 18px;
 }
 .logo {
-  border-radius: 20px;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
 }
 .titulo {
   font-size: 2rem;
@@ -91,6 +107,14 @@ function recebido(valor: string) {
   display: grid;
   gap: 12px;
 }
+.acoes :deep(.pilula),
+.colar :deep(.pilula) {
+  justify-content: center;
+}
+.acoes :deep(.rotulo),
+.colar :deep(.rotulo) {
+  flex: 0 1 auto;
+}
 .colar {
   margin-top: 16px;
   display: grid;
@@ -105,12 +129,35 @@ textarea {
   color: var(--texto);
   font-family: ui-monospace, monospace;
   font-size: 0.8rem;
+  text-align: left;
 }
 .aviso { margin-top: 16px; }
 .rodape {
   margin-top: auto;
   padding-top: 32px;
-  text-align: center;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+.instituicoes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+.instituicoes img {
+  height: 56px;
+  width: auto;
+}
+@media (prefers-color-scheme: dark) {
+  .instituicoes {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+}
+.versao {
+  margin: 0;
   font-size: 0.8rem;
 }
 </style>
